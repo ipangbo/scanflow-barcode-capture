@@ -1189,6 +1189,18 @@ export default function Home() {
     () => activeRecords.reduce((total, record) => total + record.scanCount, 0),
     [activeRecords],
   );
+  const previousScanTotal = lastScan ? Math.max(0, totalScanCount - 1) : totalScanCount;
+  const scoreboardWidth = Math.max(
+    2,
+    String(previousScanTotal).length,
+    String(totalScanCount).length,
+  );
+  const previousScoreboardDigits = String(previousScanTotal)
+    .padStart(scoreboardWidth, "0")
+    .split("");
+  const scoreboardDigits = String(totalScanCount)
+    .padStart(scoreboardWidth, "0")
+    .split("");
 
   const getExportPayload = (format: ExportFormat) => {
     if (!activeProject) return null;
@@ -1403,8 +1415,38 @@ export default function Home() {
               aria-live="polite"
               aria-label={`${totalScanCount} scans saved in this project`}
             >
-              <span className="scan-scoreboard-number" aria-hidden="true">
-                <span>{totalScanCount}</span>
+              <span className="scan-scoreboard-digits" aria-hidden="true">
+                {scoreboardDigits.map((digit, index) => {
+                  const previousDigit = previousScoreboardDigits[index];
+                  const isChanging = Boolean(lastScan && previousDigit !== digit);
+
+                  return (
+                    <span
+                      className={`scan-scoreboard-digit ${isChanging ? "is-changing" : ""}`}
+                      key={index}
+                    >
+                      <span className="scoreboard-face is-top is-static">
+                        <span>{digit}</span>
+                      </span>
+                      <span className="scoreboard-face is-bottom is-static">
+                        <span>{digit}</span>
+                      </span>
+                      {isChanging && (
+                        <>
+                          <span className="scoreboard-face is-bottom is-old-bottom">
+                            <span>{previousDigit}</span>
+                          </span>
+                          <span className="scoreboard-face is-top is-old-top">
+                            <span>{previousDigit}</span>
+                          </span>
+                          <span className="scoreboard-face is-bottom is-new-bottom">
+                            <span>{digit}</span>
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  );
+                })}
               </span>
               <span className="scan-scoreboard-label" aria-hidden="true">saved</span>
             </div>
