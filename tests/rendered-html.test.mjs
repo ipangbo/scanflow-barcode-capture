@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -15,7 +17,7 @@ async function render() {
 }
 
 test("server-renders the barcode capture workspace", async () => {
-  const versionSource = await readFile(new URL("../app/build-version.ts", import.meta.url), "utf8");
+  const versionSource = await readSource("app/build-version.ts");
   const buildNumber = versionSource.match(/BUILD_NUMBER = (\d+)/)?.[1];
   const response = await render();
   assert.equal(response.status, 200);
@@ -36,35 +38,57 @@ test("server-renders the barcode capture workspace", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
 
+test("the page is split into maintainable feature modules", async () => {
+  const pageSource = await readSource("app/page.tsx");
+  const requiredModules = [
+    "components/scanner-panel",
+    "components/records-panel",
+    "components/scanner-settings-dialog",
+    "components/export-page",
+    "lib/barcodes",
+    "lib/storage",
+    "lib/exports",
+    "lib/scanner-runtime",
+  ];
+
+  for (const moduleName of requiredModules) {
+    assert.match(pageSource, new RegExp(`from "\\./${moduleName}"`));
+  }
+  assert.ok(pageSource.split("\n").length < 1100, "page orchestration should remain focused");
+});
+
 test("repeat scans use a distinct confirmation treatment", async () => {
-  const [pageSource, stylesheet] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  const [pageSource, scannerPanelSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
   ]);
 
-  assert.match(pageSource, /Scanned again/);
-  assert.match(pageSource, /formatOrdinal\(lastScanCount\)/);
-  assert.match(pageSource, /key=\{lastScan\.eventId\}/);
+  assert.match(scannerPanelSource, /Scanned again/);
+  assert.match(scannerPanelSource, /formatOrdinal\(lastScanCount\)/);
+  assert.match(scannerPanelSource, /key=\{lastScan\.eventId\}/);
   assert.match(pageSource, /setLastScan\(\{ eventId, record \}\)/);
   assert.match(stylesheet, /\.capture-confirmation\.is-repeat\s*\{[^}]*var\(--coral\)/s);
   assert.match(stylesheet, /@keyframes capture-in\s*\{[\s\S]*68%/);
 });
 
 test("continuous scanning has strong multi-channel feedback", async () => {
-  const [pageSource, stylesheet] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  const [pageSource, scannerPanelSource, counterSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/components/scan-counter.tsx"),
+    readSource("app/globals.css"),
   ]);
 
-  assert.match(pageSource, /className=\{`scan-flash is-\$\{scanCue\.kind\}`\}/);
-  assert.match(pageSource, /className=\{`scan-counter/);
-  assert.match(pageSource, /key=\{lastScan\?\.eventId \?\? "scan-counter-idle"\}/);
-  assert.match(pageSource, /const previousCounterTotal = lastScan \? Math\.max\(0, totalScanCount - 1\)/);
-  assert.match(pageSource, /className="scan-counter-reel"/);
-  assert.match(pageSource, /\? "Scanning"/);
-  assert.doesNotMatch(pageSource, /Scanning · Enhanced/);
-  assert.match(pageSource, /Verifying…/);
-  assert.match(pageSource, /Digits only/);
+  assert.match(scannerPanelSource, /className=\{`scan-flash is-\$\{scanCue\.kind\}`\}/);
+  assert.match(counterSource, /className=\{`scan-counter/);
+  assert.match(scannerPanelSource, /key=\{lastScan\?\.eventId \?\? "scan-counter-idle"\}/);
+  assert.match(counterSource, /const previousTotal = isAnimating \? Math\.max\(0, total - 1\)/);
+  assert.match(counterSource, /className="scan-counter-reel"/);
+  assert.match(scannerPanelSource, /\? "Scanning"/);
+  assert.doesNotMatch(scannerPanelSource, /Scanning · Enhanced/);
+  assert.match(scannerPanelSource, /Verifying…/);
+  assert.match(scannerPanelSource, /Digits only/);
   assert.match(pageSource, /kind === "repeat" \? \[38, 36, 38\] : 55/);
   assert.match(pageSource, /frequency: 940/);
   assert.match(pageSource, /frequency: 520/);
@@ -76,88 +100,121 @@ test("continuous scanning has strong multi-channel feedback", async () => {
 });
 
 test("successful scans render their detected barcode region", async () => {
-  const [pageSource, stylesheet] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  const [pageSource, scannerPanelSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
   ]);
 
   assert.match(pageSource, /result\.cornerPoints/);
   assert.match(pageSource, /result\.getResultPoints\(\)/);
-  assert.match(pageSource, /className="detected-region"/);
+  assert.match(scannerPanelSource, /className="detected-region"/);
   assert.match(stylesheet, /\.detected-region\s*\{/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [pageSource, settingsSource, barcodesSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-settings-dialog.tsx"),
+    readSource("app/lib/barcodes.ts"),
+  ]);
 
-  assert.match(pageSource, /University ID/);
-  assert.match(pageSource, /Universal/);
-  assert.match(pageSource, /Choose exactly which formats to recognize/);
-  assert.match(pageSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
-  assert.match(pageSource, /example: "12345678"/);
-  assert.match(pageSource, /example: "5901234123457"/);
-  assert.match(pageSource, /example: "https:\/\/example\.edu"/);
+  assert.match(settingsSource, /University ID/);
+  assert.match(settingsSource, /Universal/);
+  assert.match(settingsSource, /Choose exactly which formats to recognize/);
+  assert.match(barcodesSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
+  assert.match(barcodesSource, /example: "12345678"/);
+  assert.match(barcodesSource, /example: "5901234123457"/);
+  assert.match(barcodesSource, /example: "https:\/\/example\.edu"/);
   assert.match(pageSource, /createHighAccuracyReader\(enabledFormatIds\)/);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [pageSource, settingsSource, barcodesSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-settings-dialog.tsx"),
+    readSource("app/lib/barcodes.ts"),
+  ]);
 
-  assert.match(pageSource, /REQUIRED_DECODE_MATCHES = 2/);
-  assert.match(pageSource, /DECODE_CONFIRMATION_WINDOW_MS = 700/);
+  assert.match(barcodesSource, /REQUIRED_DECODE_MATCHES = 2/);
+  assert.match(barcodesSource, /DECODE_CONFIRMATION_WINDOW_MS = 700/);
   assert.match(pageSource, /scanMode === "university" && !\/\^\[0-9\]\+\$\/\.test\(trimmedValue\)/);
   assert.match(pageSource, /pending\.matches \+= 1/);
   assert.match(pageSource, /pending\.matches < REQUIRED_DECODE_MATCHES/);
-  assert.match(pageSource, /Code 128 · digits only · two-frame confirmation/);
+  assert.match(settingsSource, /Code 128 · digits only · two-frame confirmation/);
 });
 
 test("iPhone Safari receives a native switch haptic fallback", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [pageSource, runtimeSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/lib/scanner-runtime.ts"),
+  ]);
 
-  assert.match(pageSource, /input\.setAttribute\("switch", ""\)/);
+  assert.match(runtimeSource, /input\.setAttribute\("switch", ""\)/);
   assert.match(pageSource, /if \(!vibrated\) triggerIOSSwitchHaptic\(\)/);
   assert.match(pageSource, /useState<ScannerMode>\("university"\)/);
 });
 
 test("repeat barcodes increment one aggregated entry", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [pageSource, storageSource, exportSource, recordsSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/lib/storage.ts"),
+    readSource("app/lib/exports.ts"),
+    readSource("app/components/records-panel.tsx"),
+  ]);
 
   assert.match(pageSource, /scanCount: existing\.scanCount \+ 1/);
   assert.match(pageSource, /currentRecords\.filter\(\(item\) => item\.id !== record\.id\)/);
-  assert.match(pageSource, /existing\.scanCount \+= record\.scanCount/);
-  assert.match(pageSource, /"Scan Count"/);
-  assert.match(pageSource, /record\.scanCount === 1 \? "scan" : "scans"/);
+  assert.match(storageSource, /existing\.scanCount \+= record\.scanCount/);
+  assert.match(exportSource, /"Scan Count"/);
+  assert.match(recordsSource, /record\.scanCount === 1 \? "scan" : "scans"/);
+});
+
+test("local storage keys and migrations remain backward compatible", async () => {
+  const storageSource = await readSource("app/lib/storage.ts");
+
+  assert.match(storageSource, /"liansao\.scans\.v1"/);
+  assert.match(storageSource, /"liansao\.settings\.v1"/);
+  assert.match(storageSource, /"scanflow\.projects\.v1"/);
+  assert.match(storageSource, /typeof record\.scanCount === "number"/);
+  assert.match(storageSource, /customFormats: customFormats\.length \? customFormats : \[\.\.\.ALL_FORMAT_IDS\]/);
 });
 
 test("TXT export contains only one barcode value per line", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [exportSource, exportPageSource] = await Promise.all([
+    readSource("app/lib/exports.ts"),
+    readSource("app/components/export-page.tsx"),
+  ]);
 
-  assert.match(pageSource, /const exportTxt = \(\) =>/);
-  assert.match(pageSource, /format === "txt"/);
-  assert.match(pageSource, /record\.value\.replace\(\/\[\\r\\n\]\+\/g, ""\)/);
-  assert.match(pageSource, /\.join\("\\r\\n"\)/);
-  assert.match(pageSource, /text\/plain;charset=utf-8/);
-  assert.match(pageSource, /Plain barcode values/);
+  assert.match(exportSource, /format === "txt"/);
+  assert.match(exportSource, /record\.value\.replace\(\/\[\\r\\n\]\+\/g, ""\)/);
+  assert.match(exportSource, /\.join\("\\r\\n"\)/);
+  assert.match(exportSource, /text\/plain;charset=utf-8/);
+  assert.match(exportPageSource, /Plain barcode values/);
 });
 
 test("export uses one secondary page with download and email actions", async () => {
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [pageSource, recordsSource, exportPageSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/records-panel.tsx"),
+    readSource("app/components/export-page.tsx"),
+  ]);
 
-  assert.match(pageSource, /className="export-open-button"/);
-  assert.match(pageSource, /className="export-page"/);
-  assert.match(pageSource, /Back to scanner/);
+  assert.match(recordsSource, /className="export-open-button"/);
+  assert.match(exportPageSource, /className="export-page"/);
+  assert.match(exportPageSource, /Back to scanner/);
   assert.match(pageSource, /mailto:\?subject=/);
-  assert.match(pageSource, /emailExport\("txt"\)/);
-  assert.match(pageSource, /emailExport\("csv"\)/);
-  assert.match(pageSource, /emailExport\("json"\)/);
-  assert.match(pageSource, /The selected export is placed in the message body\./);
+  assert.match(exportPageSource, /onEmail\("txt"\)/);
+  assert.match(exportPageSource, /onEmail\("csv"\)/);
+  assert.match(exportPageSource, /onEmail\("json"\)/);
+  assert.match(exportPageSource, /The selected export is placed in the message body\./);
 });
 
 test("build number is shown in the footer and increments before builds", async () => {
   const [pageSource, packageSource, incrementSource] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readFile(new URL("../scripts/increment-build-version.mjs", import.meta.url), "utf8"),
+    readSource("app/page.tsx"),
+    readSource("package.json"),
+    readSource("scripts/increment-build-version.mjs"),
   ]);
 
   assert.match(pageSource, /Build \{BUILD_NUMBER\}/);
