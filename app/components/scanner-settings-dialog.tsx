@@ -1,19 +1,28 @@
 import {
   Check,
+  Cpu,
   GraduationCap,
+  Library,
   ScanSearch,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { BARCODE_FORMATS } from "../lib/barcodes";
-import type { BarcodeFormatId, ScannerMode } from "../lib/models";
+import type {
+  BarcodeFormatId,
+  ScannerEnginePreference,
+  ScannerMode,
+} from "../lib/models";
 
 type ScannerSettingsDialogProps = {
   mode: ScannerMode;
+  recognitionEngine: ScannerEnginePreference;
+  nativeEngineAvailable: boolean;
   customFormats: BarcodeFormatId[];
   enabledFormatIds: BarcodeFormatId[];
   onModeChange: (mode: ScannerMode) => void;
+  onRecognitionEngineChange: (engine: ScannerEnginePreference) => void;
   onToggleFormat: (formatId: BarcodeFormatId) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
@@ -21,9 +30,12 @@ type ScannerSettingsDialogProps = {
 
 export function ScannerSettingsDialog({
   mode,
+  recognitionEngine,
+  nativeEngineAvailable,
   customFormats,
   enabledFormatIds,
   onModeChange,
+  onRecognitionEngineChange,
   onToggleFormat,
   onSubmit,
   onClose,
@@ -95,6 +107,41 @@ export function ScannerSettingsDialog({
             <span className="mode-copy">
               <strong>Custom</strong>
               <small>Choose exactly which formats to recognize</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset className="engine-options">
+          <legend>Recognition engine</legend>
+          <label
+            className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
+          >
+            <input
+              type="radio"
+              name="recognition-engine"
+              value="native"
+              checked={recognitionEngine === "native"}
+              disabled={!nativeEngineAvailable}
+              onChange={() => onRecognitionEngineChange("native")}
+            />
+            <span className="mode-icon"><Cpu size={20} /></span>
+            <span className="mode-copy">
+              <strong>BarcodeDetector API</strong>
+              <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
+            </span>
+          </label>
+          <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
+            <input
+              type="radio"
+              name="recognition-engine"
+              value="zxing"
+              checked={recognitionEngine === "zxing"}
+              onChange={() => onRecognitionEngineChange("zxing")}
+            />
+            <span className="mode-icon"><Library size={20} /></span>
+            <span className="mode-copy">
+              <strong>ZXing JS</strong>
+              <small>Third-party engine · @zxing/browser</small>
             </span>
           </label>
         </fieldset>

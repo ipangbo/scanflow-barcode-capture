@@ -38,6 +38,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.doesNotMatch(html, /01\s*\/\s*CAPTURE|02\s*\/\s*ENTRIES/i);
   assert.doesNotMatch(html, /Download or email this project/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
+  assert.match(html, /https:\/\/github\.com\/ipangbo\/scanflow-barcode-capture/);
 });
 
 test("the page is split into maintainable feature modules", async () => {
@@ -126,6 +127,11 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(settingsSource, /University ID/);
   assert.match(settingsSource, /Universal/);
   assert.match(settingsSource, /Choose exactly which formats to recognize/);
+  assert.match(settingsSource, /BarcodeDetector API/);
+  assert.match(settingsSource, /ZXing JS/);
+  assert.match(settingsSource, /@zxing\/browser/);
+  assert.match(pageSource, /recognitionEngine === "native"/);
+  assert.match(pageSource, /Choose ZXing JS in settings/);
   assert.match(barcodesSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
   assert.match(barcodesSource, /example: "12345678"/);
   assert.match(barcodesSource, /example: "5901234123457"/);
@@ -182,6 +188,7 @@ test("local storage keys and migrations remain backward compatible", async () =>
   assert.match(storageSource, /"scanflow\.projects\.v1"/);
   assert.match(storageSource, /typeof record\.scanCount === "number"/);
   assert.match(storageSource, /customFormats: customFormats\.length \? customFormats : \[\.\.\.ALL_FORMAT_IDS\]/);
+  assert.match(storageSource, /settings\.recognitionEngine === "native"/);
 });
 
 test("TXT export contains only one barcode value per line", async () => {

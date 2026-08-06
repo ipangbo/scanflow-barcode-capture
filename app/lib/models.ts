@@ -15,7 +15,8 @@ export type BarcodeFormatId =
 
 export type ScannerMode = "university" | "universal" | "custom";
 export type ScannerStatus = "idle" | "starting" | "scanning" | "error";
-export type ScannerEngine = "native" | "zxing" | null;
+export type ScannerEnginePreference = "native" | "zxing";
+export type ScannerEngine = ScannerEnginePreference | null;
 export type ProjectDialogMode = "create" | "rename" | null;
 export type ExportFormat = "txt" | "csv" | "json";
 

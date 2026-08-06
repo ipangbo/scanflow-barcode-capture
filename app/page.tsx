@@ -5,6 +5,7 @@ import {
   BrowserMultiFormatReader,
 } from "@zxing/browser";
 import { Settings, ShieldCheck } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUILD_NUMBER } from "./build-version";
@@ -46,6 +47,7 @@ import {
   type ScanProject,
   type ScanRecord,
   type ScannerEngine,
+  type ScannerEnginePreference,
   type ScannerMode,
   type ScannerStatus,
 } from "./lib/models";
@@ -91,11 +93,13 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [scanMode, setScanMode] = useState<ScannerMode>("university");
+  const [recognitionEngine, setRecognitionEngine] = useState<ScannerEnginePreference>("zxing");
   const [scanModeConfigured, setScanModeConfigured] = useState(false);
   const [customFormats, setCustomFormats] = useState<BarcodeFormatId[]>(() => [
     ...ALL_FORMAT_IDS,
   ]);
   const [draftScanMode, setDraftScanMode] = useState<ScannerMode>("university");
+  const [draftRecognitionEngine, setDraftRecognitionEngine] = useState<ScannerEnginePreference>("zxing");
   const [draftCustomFormats, setDraftCustomFormats] = useState<BarcodeFormatId[]>(() => [
     ...ALL_FORMAT_IDS,
   ]);
@@ -114,6 +118,7 @@ export default function Home() {
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [engine, setEngine] = useState<ScannerEngine>(null);
+  const [nativeEngineAvailable, setNativeEngineAvailable] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [zoomRange, setZoomRange] = useState<{
     min: number;
@@ -134,6 +139,17 @@ export default function Home() {
       setScanMode(stored.scanMode);
       setScanModeConfigured(stored.scanModeConfigured);
       setCustomFormats(stored.customFormats);
+      const NativeDetector = (
+        window as typeof window & {
+          BarcodeDetector?: NativeBarcodeDetectorConstructor;
+        }
+      ).BarcodeDetector;
+      const supportsNativeEngine = Boolean(NativeDetector?.getSupportedFormats);
+      const storedEngine = stored.recognitionEngine ?? (supportsNativeEngine ? "native" : "zxing");
+      setNativeEngineAvailable(supportsNativeEngine);
+      setRecognitionEngine(
+        storedEngine === "native" && !supportsNativeEngine ? "zxing" : storedEngine,
+      );
       activeProjectIdRef.current = stored.activeProjectId;
       setActiveProjectId(stored.activeProjectId);
     } catch {
@@ -154,6 +170,7 @@ export default function Home() {
         scanMode,
         scanModeConfigured,
         customFormats,
+        recognitionEngine,
       });
     }
   }, [
@@ -163,6 +180,7 @@ export default function Home() {
     scanMode,
     scanModeConfigured,
     customFormats,
+    recognitionEngine,
     hydrated,
   ]);
 
@@ -374,6 +392,7 @@ export default function Home() {
 
   const openScannerSettings = () => {
     setDraftScanMode(scanMode);
+    setDraftRecognitionEngine(recognitionEngine);
     setDraftCustomFormats([...customFormats]);
     setSettingsOpen(true);
   };
@@ -396,13 +415,14 @@ export default function Home() {
     const wasScanning = scanningRef.current;
     if (wasScanning) stopScanner();
     setScanMode(draftScanMode);
+    setRecognitionEngine(draftRecognitionEngine);
     setScanModeConfigured(true);
     setCustomFormats([...draftCustomFormats]);
     setSettingsOpen(false);
     setToast(
       wasScanning
-        ? "Scanning mode saved. Restart the scanner to apply it."
-        : "Scanning mode saved.",
+        ? "Scanner settings saved. Restart the scanner to apply them."
+        : "Scanner settings saved.",
     );
   };
 
@@ -441,6 +461,39 @@ export default function Home() {
       setCameraError("Camera access requires a secure connection. Use the published site.");
       setStatus("error");
       return;
+    }
+
+    const NativeDetector = (
+      window as typeof window & {
+        BarcodeDetector?: NativeBarcodeDetectorConstructor;
+      }
+    ).BarcodeDetector;
+    let preferredNativeFormats: string[] = [];
+
+    if (recognitionEngine === "native") {
+      if (!NativeDetector?.getSupportedFormats) {
+        setNativeEngineAvailable(false);
+        setCameraError("BarcodeDetector API is unavailable in this browser. Choose ZXing JS in settings.");
+        setStatus("error");
+        return;
+      }
+
+      try {
+        const supportedFormats = await NativeDetector.getSupportedFormats();
+        preferredNativeFormats = requestedNativeFormats.filter((format) =>
+          supportedFormats.includes(format),
+        );
+      } catch {
+        setCameraError("BarcodeDetector API could not be initialized. Choose ZXing JS in settings.");
+        setStatus("error");
+        return;
+      }
+
+      if (!preferredNativeFormats.length) {
+        setCameraError("BarcodeDetector API does not support the selected formats. Choose ZXing JS in settings.");
+        setStatus("error");
+        return;
+      }
     }
 
     try {
@@ -492,32 +545,14 @@ export default function Home() {
 
       let detector: NativeBarcodeDetector | null = null;
       let reader: BrowserMultiFormatReader | null = null;
-      const Detector = (
-        window as typeof window & {
-          BarcodeDetector?: NativeBarcodeDetectorConstructor;
-        }
-      ).BarcodeDetector;
-
-      if (Detector?.getSupportedFormats) {
-        try {
-          const supportedFormats = await Detector.getSupportedFormats();
-          const preferredFormats = requestedNativeFormats.filter((format) =>
-            supportedFormats.includes(format),
-          );
-          if (preferredFormats.length) {
-            detector = new Detector({ formats: [...preferredFormats] });
-          }
-        } catch {
-          detector = null;
-        }
-      }
-
-      if (!detector) {
+      if (recognitionEngine === "native" && NativeDetector) {
+        detector = new NativeDetector({ formats: [...preferredNativeFormats] });
+      } else {
         reader = createHighAccuracyReader(enabledFormatIds);
         readerRef.current = reader;
       }
 
-      setEngine(detector ? "native" : "zxing");
+      setEngine(recognitionEngine);
       scanningRef.current = true;
       setStatus("scanning");
 
@@ -642,10 +677,14 @@ export default function Home() {
                 } catch {
                   nativeErrors += 1;
                   if (nativeErrors >= 2) {
+                    scanningRef.current = false;
+                    streamRef.current?.getTracks().forEach((streamTrack) => streamTrack.stop());
+                    streamRef.current = null;
+                    if (videoRef.current) videoRef.current.srcObject = null;
                     detector = null;
-                    reader = createHighAccuracyReader(enabledFormatIds);
-                    readerRef.current = reader;
-                    setEngine("zxing");
+                    setEngine(null);
+                    setCameraError("BarcodeDetector API stopped responding. Choose ZXing JS in settings.");
+                    setStatus("error");
                   }
                 }
               } else if (reader) {
@@ -686,7 +725,7 @@ export default function Home() {
       setCameraError(friendlyCameraError(error));
       setStatus("error");
     }
-  }, [acceptDecodedValue, customFormats, scanMode, status]);
+  }, [acceptDecodedValue, customFormats, recognitionEngine, scanMode, status]);
 
   const toggleTorch = async () => {
     const next = !torchOn;
@@ -984,6 +1023,15 @@ export default function Home() {
       <footer>
         <p><ShieldCheck size={15} /> Privacy first: camera frames, projects, and entries never leave this device.</p>
         <span className="footer-meta">
+          <a
+            className="footer-github"
+            href="https://github.com/ipangbo/scanflow-barcode-capture"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View ScanFlow on GitHub"
+          >
+            <FaGithub size={14} aria-hidden="true" /> GitHub
+          </a>
           <span>ScanFlow · Local-first barcode capture</span>
           <b>Build {BUILD_NUMBER}</b>
         </span>
@@ -1018,9 +1066,12 @@ export default function Home() {
       {settingsOpen && (
         <ScannerSettingsDialog
           mode={draftScanMode}
+          recognitionEngine={draftRecognitionEngine}
+          nativeEngineAvailable={nativeEngineAvailable}
           customFormats={draftCustomFormats}
           enabledFormatIds={draftEnabledFormatIds}
           onModeChange={setDraftScanMode}
+          onRecognitionEngineChange={setDraftRecognitionEngine}
           onToggleFormat={toggleDraftFormat}
           onSubmit={saveScannerSettings}
           onClose={() => setSettingsOpen(false)}

@@ -4,6 +4,7 @@ import {
   type BarcodeFormatId,
   type ScanProject,
   type ScanRecord,
+  type ScannerEnginePreference,
   type ScannerMode,
 } from "./models";
 
@@ -18,6 +19,7 @@ type StoredSettings = {
   scanMode?: ScannerMode;
   scanModeConfigured?: boolean;
   customFormats?: string[];
+  recognitionEngine?: string;
 };
 
 export type StoredAppState = {
@@ -29,6 +31,7 @@ export type StoredAppState = {
   scanMode: ScannerMode;
   scanModeConfigured: boolean;
   customFormats: BarcodeFormatId[];
+  recognitionEngine: ScannerEnginePreference | null;
 };
 
 function readProjects(storage: Storage) {
@@ -130,6 +133,10 @@ export function readStoredAppState(storage: Storage): StoredAppState {
     scanMode,
     scanModeConfigured: hasExplicitScanMode,
     customFormats: customFormats.length ? customFormats : [...ALL_FORMAT_IDS],
+    recognitionEngine:
+      settings.recognitionEngine === "native" || settings.recognitionEngine === "zxing"
+        ? settings.recognitionEngine
+        : null,
   };
 }
 
@@ -142,6 +149,7 @@ export function writeStoredSettings(
     scanMode: ScannerMode;
     scanModeConfigured: boolean;
     customFormats: BarcodeFormatId[];
+    recognitionEngine: ScannerEnginePreference;
   },
 ) {
   storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
