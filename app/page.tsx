@@ -171,6 +171,18 @@ type PendingDecodedValue = {
   lastSeenAt: number;
 };
 
+type ScanCueKind = "verifying" | "saved" | "repeat" | "invalid";
+
+type ScanCue = {
+  id: string;
+  kind: ScanCueKind;
+};
+
+type ScanFeedback = {
+  eventId: string;
+  record: ScanRecord;
+};
+
 const formatNames: Record<string, string> = {
   AZTEC: "AZTEC",
   CODABAR: "CODABAR",
@@ -312,9 +324,12 @@ export default function Home() {
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const scanTimerRef = useRef<number | null>(null);
   const detectionTimerRef = useRef<number | null>(null);
+  const scanCueTimerRef = useRef<number | null>(null);
+  const scanFeedbackTimerRef = useRef<number | null>(null);
   const scanningRef = useRef(false);
   const recentScansRef = useRef(new Map<string, number>());
   const pendingDecodedValueRef = useRef<PendingDecodedValue | null>(null);
+  const invalidCueRef = useRef({ value: "", shownAt: 0 });
   const feedbackRef = useRef({ sound: true, vibration: true });
   const activeProjectIdRef = useRef(DEFAULT_PROJECT_ID);
   const recordsRef = useRef<ScanRecord[]>([]);
@@ -340,7 +355,8 @@ export default function Home() {
   const [cameraError, setCameraError] = useState("");
   const [query, setQuery] = useState("");
   const [manualValue, setManualValue] = useState("");
-  const [lastScan, setLastScan] = useState<ScanRecord | null>(null);
+  const [lastScan, setLastScan] = useState<ScanFeedback | null>(null);
+  const [scanCue, setScanCue] = useState<ScanCue | null>(null);
   const [detectionRegion, setDetectionRegion] = useState<DetectionRegion | null>(null);
   const [toast, setToast] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -514,11 +530,24 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const playFeedback = useCallback(() => {
+  const showScanCue = useCallback((kind: ScanCueKind, duration: number) => {
+    const cue = { id: createId(), kind };
+    if (scanCueTimerRef.current !== null) {
+      window.clearTimeout(scanCueTimerRef.current);
+    }
+    setScanCue(cue);
+    scanCueTimerRef.current = window.setTimeout(() => {
+      setScanCue((current) => (current?.id === cue.id ? null : current));
+      scanCueTimerRef.current = null;
+    }, duration);
+    return cue.id;
+  }, []);
+
+  const playFeedback = useCallback((kind: "saved" | "repeat") => {
     if (feedbackRef.current.vibration) {
       let vibrated = false;
       if ("vibrate" in navigator) {
-        vibrated = navigator.vibrate(55);
+        vibrated = navigator.vibrate(kind === "repeat" ? [38, 36, 38] : 55);
       }
       if (!vibrated) triggerIOSSwitchHaptic();
     }
@@ -531,18 +560,27 @@ export default function Home() {
             .webkitAudioContext;
         if (!AudioContextClass) return;
         const context = new AudioContextClass();
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(880, context.currentTime);
-        gain.gain.setValueAtTime(0.0001, context.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.12);
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.13);
-        oscillator.addEventListener("ended", () => void context.close());
+        const tones = kind === "repeat"
+          ? [{ frequency: 520, delay: 0 }, { frequency: 410, delay: 0.12 }]
+          : [{ frequency: 940, delay: 0 }];
+
+        tones.forEach((tone, index) => {
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          const startsAt = context.currentTime + tone.delay;
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(tone.frequency, startsAt);
+          gain.gain.setValueAtTime(0.0001, startsAt);
+          gain.gain.exponentialRampToValueAtTime(0.12, startsAt + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startsAt + 0.09);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.start(startsAt);
+          oscillator.stop(startsAt + 0.1);
+          if (index === tones.length - 1) {
+            oscillator.addEventListener("ended", () => void context.close());
+          }
+        });
       } catch {
         // Audio feedback is optional and can be blocked by browser policy.
       }
@@ -583,14 +621,19 @@ export default function Home() {
 
       recordsRef.current = nextRecords;
       setRecords(nextRecords);
-      setLastScan(record);
-      playFeedback();
-      window.setTimeout(
-        () => setLastScan((current) => (current?.id === record.id ? null : current)),
-        1500,
-      );
+      const feedbackKind = existing ? "repeat" : "saved";
+      const eventId = showScanCue(feedbackKind, feedbackKind === "repeat" ? 680 : 560);
+      setLastScan({ eventId, record });
+      playFeedback(feedbackKind);
+      if (scanFeedbackTimerRef.current !== null) {
+        window.clearTimeout(scanFeedbackTimerRef.current);
+      }
+      scanFeedbackTimerRef.current = window.setTimeout(() => {
+        setLastScan((current) => (current?.eventId === eventId ? null : current));
+        scanFeedbackTimerRef.current = null;
+      }, 1600);
     },
-    [playFeedback],
+    [playFeedback, showScanCue],
   );
 
   const acceptDecodedValue = useCallback(
@@ -598,12 +641,26 @@ export default function Home() {
       const trimmedValue = value.trim();
       if (!trimmedValue) return false;
 
+      const now = Date.now();
+
       if (scanMode === "university" && !/^[0-9]+$/.test(trimmedValue)) {
+        pendingDecodedValueRef.current = null;
+        if (
+          invalidCueRef.current.value !== trimmedValue ||
+          now - invalidCueRef.current.shownAt > 1200
+        ) {
+          invalidCueRef.current = { value: trimmedValue, shownAt: now };
+          showScanCue("invalid", 720);
+        }
+        return false;
+      }
+
+      const previous = recentScansRef.current.get(trimmedValue) ?? 0;
+      if (now - previous < DUPLICATE_COOLDOWN_MS) {
         pendingDecodedValueRef.current = null;
         return false;
       }
 
-      const now = Date.now();
       const confirmationKey = `${format}\u0000${trimmedValue}`;
       const pending = pendingDecodedValueRef.current;
       if (
@@ -616,6 +673,7 @@ export default function Home() {
           matches: 1,
           lastSeenAt: now,
         };
+        showScanCue("verifying", DECODE_CONFIRMATION_WINDOW_MS);
         return false;
       }
 
@@ -623,9 +681,6 @@ export default function Home() {
       pending.lastSeenAt = now;
       if (pending.matches < REQUIRED_DECODE_MATCHES) return false;
       pendingDecodedValueRef.current = null;
-
-      const previous = recentScansRef.current.get(trimmedValue) ?? 0;
-      if (now - previous < DUPLICATE_COOLDOWN_MS) return false;
 
       recentScansRef.current.set(trimmedValue, now);
       for (const [key, timestamp] of recentScansRef.current) {
@@ -635,7 +690,7 @@ export default function Home() {
       addRecord(trimmedValue, format, "camera");
       return true;
     },
-    [addRecord, scanMode],
+    [addRecord, scanMode, showScanCue],
   );
 
   const stopScanner = useCallback(() => {
@@ -649,6 +704,10 @@ export default function Home() {
       window.clearTimeout(detectionTimerRef.current);
       detectionTimerRef.current = null;
     }
+    if (scanCueTimerRef.current !== null) {
+      window.clearTimeout(scanCueTimerRef.current);
+      scanCueTimerRef.current = null;
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -658,6 +717,7 @@ export default function Home() {
     setZoomRange(null);
     setEngine(null);
     setDetectionRegion(null);
+    setScanCue(null);
     setStatus("idle");
   }, []);
 
@@ -702,6 +762,12 @@ export default function Home() {
       if (detectionTimerRef.current !== null) {
         window.clearTimeout(detectionTimerRef.current);
       }
+      if (scanCueTimerRef.current !== null) {
+        window.clearTimeout(scanCueTimerRef.current);
+      }
+      if (scanFeedbackTimerRef.current !== null) {
+        window.clearTimeout(scanFeedbackTimerRef.current);
+      }
       streamRef.current?.getTracks().forEach((track) => track.stop());
     },
     [],
@@ -717,6 +783,7 @@ export default function Home() {
 
     setCameraError("");
     setStatus("starting");
+    setScanCue(null);
     pendingDecodedValueRef.current = null;
 
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
@@ -1016,7 +1083,7 @@ export default function Home() {
     [activeProject?.id, records],
   );
 
-  const lastScanCount = lastScan?.scanCount ?? 0;
+  const lastScanCount = lastScan?.record.scanCount ?? 0;
 
   const switchProject = (projectId: string) => {
     if (!projects.some((project) => project.id === projectId)) return;
@@ -1024,6 +1091,8 @@ export default function Home() {
     setActiveProjectId(projectId);
     setQuery("");
     setLastScan(null);
+    setScanCue(null);
+    pendingDecodedValueRef.current = null;
   };
 
   const openProjectDialog = (mode: Exclude<ProjectDialogMode, null>) => {
@@ -1337,6 +1406,21 @@ export default function Home() {
 
           <div className={`camera-stage ${status === "scanning" ? "is-live" : ""}`}>
             <video ref={videoRef} muted playsInline aria-label="Live camera preview" />
+            <div
+              key={lastScan?.eventId ?? "scan-total-idle"}
+              className={`scan-total ${lastScan ? "is-updated" : ""}`}
+              aria-label={`${totalScanCount} scans saved in this project`}
+            >
+              <strong>{totalScanCount}</strong>
+              <span>saved</span>
+            </div>
+            {scanCue && scanCue.kind !== "verifying" && (
+              <div
+                key={scanCue.id}
+                className={`scan-flash is-${scanCue.kind}`}
+                aria-hidden="true"
+              />
+            )}
             {status !== "scanning" && status !== "starting" && (
               <div className="camera-placeholder">
                 <div className="placeholder-barcode" aria-hidden="true">
@@ -1352,9 +1436,19 @@ export default function Home() {
                 <p>Starting camera…</p>
               </div>
             )}
-            <div className="scan-frame" aria-hidden="true" ref={frameRef}>
+            <div
+              className={`scan-frame ${scanCue ? `is-${scanCue.kind}` : ""}`}
+              aria-hidden="true"
+              ref={frameRef}
+            >
               <i /><i /><i /><i />
               {status === "scanning" && <b />}
+              {scanCue?.kind === "verifying" && (
+                <span className="scan-frame-status">Verifying…</span>
+              )}
+              {scanCue?.kind === "invalid" && (
+                <span className="scan-frame-status">Digits only</span>
+              )}
             </div>
             {detectionRegion && status === "scanning" && (
               <div
@@ -1374,7 +1468,7 @@ export default function Home() {
             )}
             {lastScan && (
               <div
-                key={lastScan.id}
+                key={lastScan.eventId}
                 className={`capture-confirmation ${lastScanCount > 1 ? "is-repeat" : ""}`}
                 role="status"
               >
@@ -1388,7 +1482,7 @@ export default function Home() {
                     ? `Scanned again · ${formatOrdinal(lastScanCount)} time`
                     : "Saved"}
                 </span>
-                <strong>{lastScan.value}</strong>
+                <strong>{lastScan.record.value}</strong>
               </div>
             )}
           </div>

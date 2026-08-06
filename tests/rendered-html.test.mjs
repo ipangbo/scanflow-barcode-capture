@@ -44,9 +44,28 @@ test("repeat scans use a distinct confirmation treatment", async () => {
 
   assert.match(pageSource, /Scanned again/);
   assert.match(pageSource, /formatOrdinal\(lastScanCount\)/);
-  assert.match(pageSource, /key=\{lastScan\.id\}/);
+  assert.match(pageSource, /key=\{lastScan\.eventId\}/);
+  assert.match(pageSource, /setLastScan\(\{ eventId, record \}\)/);
   assert.match(stylesheet, /\.capture-confirmation\.is-repeat\s*\{[^}]*var\(--coral\)/s);
   assert.match(stylesheet, /@keyframes capture-in\s*\{[\s\S]*68%/);
+});
+
+test("continuous scanning has strong multi-channel feedback", async () => {
+  const [pageSource, stylesheet] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(pageSource, /className=\{`scan-flash is-\$\{scanCue\.kind\}`\}/);
+  assert.match(pageSource, /className=\{`scan-total/);
+  assert.match(pageSource, /Verifying…/);
+  assert.match(pageSource, /Digits only/);
+  assert.match(pageSource, /kind === "repeat" \? \[38, 36, 38\] : 55/);
+  assert.match(pageSource, /frequency: 940/);
+  assert.match(pageSource, /frequency: 520/);
+  assert.match(stylesheet, /\.scan-flash\.is-saved\s*\{/);
+  assert.match(stylesheet, /\.scan-flash\.is-repeat\s*\{/);
+  assert.match(stylesheet, /\.scan-total\.is-updated\s*\{/);
 });
 
 test("successful scans render their detected barcode region", async () => {
