@@ -40,3 +40,15 @@ test("repeat scans use a distinct confirmation treatment", async () => {
   assert.match(stylesheet, /\.capture-confirmation\.is-repeat\s*\{[^}]*var\(--coral\)/s);
   assert.match(stylesheet, /@keyframes capture-in\s*\{[\s\S]*68%/);
 });
+
+test("successful scans render their detected barcode region", async () => {
+  const [pageSource, stylesheet] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(pageSource, /result\.cornerPoints/);
+  assert.match(pageSource, /result\.getResultPoints\(\)/);
+  assert.match(pageSource, /className="detected-region"/);
+  assert.match(stylesheet, /\.detected-region\s*\{/);
+});

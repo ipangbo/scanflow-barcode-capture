@@ -86,7 +86,13 @@ const nativeFormatNames: Record<string, string> = {
   codabar: "CODABAR",
 };
 
-type DetectedBarcode = { rawValue: string; format: string };
+type BarcodePoint = { x: number; y: number };
+type DetectedBarcode = {
+  rawValue: string;
+  format: string;
+  boundingBox?: DOMRectReadOnly;
+  cornerPoints?: BarcodePoint[];
+};
 type NativeBarcodeDetector = {
   detect: (source: CanvasImageSource) => Promise<DetectedBarcode[]>;
 };
@@ -122,6 +128,14 @@ type ScanRecord = {
   format: string;
   scannedAt: string;
   source: "camera" | "manual";
+};
+
+type DetectionRegion = {
+  id: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 };
 
 const formatNames: Record<string, string> = {
@@ -226,6 +240,7 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const scanTimerRef = useRef<number | null>(null);
+  const detectionTimerRef = useRef<number | null>(null);
   const scanningRef = useRef(false);
   const recentScansRef = useRef(new Map<string, number>());
   const feedbackRef = useRef({ sound: true, vibration: true });
@@ -242,6 +257,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [manualValue, setManualValue] = useState("");
   const [lastScan, setLastScan] = useState<ScanRecord | null>(null);
+  const [detectionRegion, setDetectionRegion] = useState<DetectionRegion | null>(null);
   const [toast, setToast] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(true);
@@ -419,7 +435,7 @@ export default function Home() {
     (value: string, format: string) => {
       const now = Date.now();
       const previous = recentScansRef.current.get(value) ?? 0;
-      if (now - previous < DUPLICATE_COOLDOWN_MS) return;
+      if (now - previous < DUPLICATE_COOLDOWN_MS) return false;
 
       recentScansRef.current.set(value, now);
       for (const [key, timestamp] of recentScansRef.current) {
@@ -427,6 +443,7 @@ export default function Home() {
       }
 
       addRecord(value, format, "camera");
+      return true;
     },
     [addRecord],
   );
@@ -437,6 +454,10 @@ export default function Home() {
       window.clearTimeout(scanTimerRef.current);
       scanTimerRef.current = null;
     }
+    if (detectionTimerRef.current !== null) {
+      window.clearTimeout(detectionTimerRef.current);
+      detectionTimerRef.current = null;
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -445,6 +466,7 @@ export default function Home() {
     setTorchAvailable(false);
     setZoomRange(null);
     setEngine(null);
+    setDetectionRegion(null);
     setStatus("idle");
   }, []);
 
@@ -452,6 +474,9 @@ export default function Home() {
     () => () => {
       scanningRef.current = false;
       if (scanTimerRef.current !== null) window.clearTimeout(scanTimerRef.current);
+      if (detectionTimerRef.current !== null) {
+        window.clearTimeout(detectionTimerRef.current);
+      }
       streamRef.current?.getTracks().forEach((track) => track.stop());
     },
     [],
@@ -603,15 +628,69 @@ export default function Home() {
                 canvas.height,
               );
 
+              const revealDetectionRegion = (points: BarcodePoint[]) => {
+                if (!frameRect || points.length === 0) return;
+
+                const scaleX = frameRect.width / canvas.width;
+                const scaleY = frameRect.height / canvas.height;
+                const xValues = points.map((point) => point.x);
+                const yValues = points.map((point) => point.y);
+                const centerX = (Math.min(...xValues) + Math.max(...xValues)) / 2;
+                const centerY = (Math.min(...yValues) + Math.max(...yValues)) / 2;
+                const detectedWidth = Math.max(
+                  (Math.max(...xValues) - Math.min(...xValues)) * scaleX,
+                  frameRect.width * 0.14,
+                );
+                const detectedHeight = Math.max(
+                  (Math.max(...yValues) - Math.min(...yValues)) * scaleY,
+                  frameRect.height * 0.2,
+                );
+                const padding = 7;
+                const desiredLeft =
+                  frameRect.left - videoRect.left + centerX * scaleX - detectedWidth / 2 - padding;
+                const desiredTop =
+                  frameRect.top - videoRect.top + centerY * scaleY - detectedHeight / 2 - padding;
+                const left = Math.max(6, desiredLeft);
+                const top = Math.max(6, desiredTop);
+                const width = Math.max(
+                  36,
+                  Math.min(detectedWidth + padding * 2, videoRect.width - left - 6),
+                );
+                const height = Math.max(
+                  32,
+                  Math.min(detectedHeight + padding * 2, videoRect.height - top - 6),
+                );
+
+                setDetectionRegion({ id: createId(), left, top, width, height });
+                if (detectionTimerRef.current !== null) {
+                  window.clearTimeout(detectionTimerRef.current);
+                }
+                detectionTimerRef.current = window.setTimeout(() => {
+                  setDetectionRegion(null);
+                  detectionTimerRef.current = null;
+                }, 1050);
+              };
+
               if (detector) {
                 try {
                   const results = await detector.detect(canvas);
                   const result = results[0];
                   if (result?.rawValue) {
-                    acceptDecodedValue(
+                    const accepted = acceptDecodedValue(
                       result.rawValue,
                       nativeFormatNames[result.format] ?? result.format.toUpperCase(),
                     );
+                    if (accepted) {
+                      const points = result.cornerPoints?.length
+                        ? result.cornerPoints
+                        : result.boundingBox
+                          ? [
+                              { x: result.boundingBox.left, y: result.boundingBox.top },
+                              { x: result.boundingBox.right, y: result.boundingBox.bottom },
+                            ]
+                          : [];
+                      revealDetectionRegion(points);
+                    }
                   }
                   nativeErrors = 0;
                 } catch {
@@ -626,10 +705,18 @@ export default function Home() {
               } else if (reader) {
                 try {
                   const result = reader.decodeFromCanvas(canvas);
-                  acceptDecodedValue(
+                  const accepted = acceptDecodedValue(
                     result.getText(),
                     BarcodeFormat[result.getBarcodeFormat()] ?? "UNKNOWN",
                   );
+                  if (accepted) {
+                    revealDetectionRegion(
+                      (result.getResultPoints() ?? []).map((point) => ({
+                        x: point.getX(),
+                        y: point.getY(),
+                      })),
+                    );
+                  }
                 } catch {
                   // A frame without a readable barcode is expected during scanning.
                 }
@@ -649,6 +736,7 @@ export default function Home() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
+      setDetectionRegion(null);
       setCameraError(friendlyCameraError(error));
       setStatus("error");
     }
@@ -989,6 +1077,22 @@ export default function Home() {
               <i /><i /><i /><i />
               {status === "scanning" && <b />}
             </div>
+            {detectionRegion && status === "scanning" && (
+              <div
+                key={detectionRegion.id}
+                className="detected-region"
+                style={{
+                  left: detectionRegion.left,
+                  top: detectionRegion.top,
+                  width: detectionRegion.width,
+                  height: detectionRegion.height,
+                }}
+                aria-hidden="true"
+              >
+                <i /><i /><i /><i />
+                <span>Detected</span>
+              </div>
+            )}
             {lastScan && (
               <div
                 key={lastScan.id}
