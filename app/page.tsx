@@ -146,6 +146,7 @@ type ScanRecord = {
   value: string;
   format: string;
   scannedAt: string;
+  scanCount: number;
   source: "camera" | "manual";
 };
 
@@ -302,6 +303,7 @@ export default function Home() {
   const recentScansRef = useRef(new Map<string, number>());
   const feedbackRef = useRef({ sound: true, vibration: true });
   const activeProjectIdRef = useRef(DEFAULT_PROJECT_ID);
+  const recordsRef = useRef<ScanRecord[]>([]);
 
   const [records, setRecords] = useState<ScanRecord[]>([]);
   const [projects, setProjects] = useState<ScanProject[]>(() => [createDefaultProject()]);
@@ -382,8 +384,24 @@ export default function Home() {
                 typeof record.projectId === "string" && validProjectIds.has(record.projectId)
                   ? record.projectId
                   : fallbackProjectId,
+              scanCount:
+                typeof record.scanCount === "number" && record.scanCount > 0
+                  ? Math.floor(record.scanCount)
+                  : 1,
             })) as ScanRecord[];
-          setRecords(migratedRecords);
+          const consolidatedRecords = new Map<string, ScanRecord>();
+          for (const record of migratedRecords) {
+            const key = JSON.stringify([record.projectId, record.value]);
+            const existing = consolidatedRecords.get(key);
+            if (existing) {
+              existing.scanCount += record.scanCount;
+            } else {
+              consolidatedRecords.set(key, { ...record });
+            }
+          }
+          const nextRecords = [...consolidatedRecords.values()];
+          recordsRef.current = nextRecords;
+          setRecords(nextRecords);
         }
       }
 
@@ -463,6 +481,7 @@ export default function Home() {
   ]);
 
   useEffect(() => {
+    recordsRef.current = records;
     if (hydrated) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
     }
@@ -520,16 +539,35 @@ export default function Home() {
       const trimmedValue = value.trim();
       if (!trimmedValue) return;
 
-      const record: ScanRecord = {
-        id: createId(),
-        projectId: activeProjectIdRef.current,
-        value: trimmedValue,
-        format,
-        scannedAt: new Date().toISOString(),
-        source,
-      };
+      const projectId = activeProjectIdRef.current;
+      const currentRecords = recordsRef.current;
+      const existing = currentRecords.find(
+        (record) => record.projectId === projectId && record.value === trimmedValue,
+      );
+      const record: ScanRecord = existing
+        ? {
+            ...existing,
+            format,
+            scannedAt: new Date().toISOString(),
+            scanCount: existing.scanCount + 1,
+            source,
+          }
+        : {
+            id: createId(),
+            projectId,
+            value: trimmedValue,
+            format,
+            scannedAt: new Date().toISOString(),
+            scanCount: 1,
+            source,
+          };
+      const nextRecords = [
+        record,
+        ...currentRecords.filter((item) => item.id !== record.id),
+      ];
 
-      setRecords((current) => [record, ...current]);
+      recordsRef.current = nextRecords;
+      setRecords(nextRecords);
       setLastScan(record);
       playFeedback();
       window.setTimeout(
@@ -933,13 +971,7 @@ export default function Home() {
     [activeProject?.id, records],
   );
 
-  const lastScanCount = useMemo(() => {
-    if (!lastScan) return 0;
-    return records.filter(
-      (record) =>
-        record.projectId === lastScan.projectId && record.value === lastScan.value,
-    ).length;
-  }, [lastScan, records]);
+  const lastScanCount = lastScan?.scanCount ?? 0;
 
   const switchProject = (projectId: string) => {
     if (!projects.some((project) => project.id === projectId)) return;
@@ -1008,7 +1040,11 @@ export default function Home() {
     const nextProject = projects.find((project) => project.id !== activeProject.id);
     if (!nextProject) return;
     setProjects((current) => current.filter((project) => project.id !== activeProject.id));
-    setRecords((current) => current.filter((record) => record.projectId !== activeProject.id));
+    setRecords((current) => {
+      const nextRecords = current.filter((record) => record.projectId !== activeProject.id);
+      recordsRef.current = nextRecords;
+      return nextRecords;
+    });
     activeProjectIdRef.current = nextProject.id;
     setActiveProjectId(nextProject.id);
     setQuery("");
@@ -1035,8 +1071,8 @@ export default function Home() {
     );
   }, [activeRecords, query]);
 
-  const uniqueCount = useMemo(
-    () => new Set(activeRecords.map((record) => record.value)).size,
+  const totalScanCount = useMemo(
+    () => activeRecords.reduce((total, record) => total + record.scanCount, 0),
     [activeRecords],
   );
 
@@ -1047,13 +1083,14 @@ export default function Home() {
         String(index + 1),
         record.value,
         normalizeFormat(record.format),
+        String(record.scanCount),
         new Date(record.scannedAt).toLocaleString("en-US", { hour12: false }),
         record.source === "camera" ? "Camera" : "Manual",
       ]
         .map(safeCsvCell)
         .join(","),
     );
-    const header = ["Index", "Barcode", "Format", "Scanned At", "Source"]
+    const header = ["Index", "Barcode", "Format", "Scan Count", "Last Scanned At", "Last Source"]
       .map(safeCsvCell)
       .join(",");
     downloadBlob(
@@ -1099,9 +1136,13 @@ export default function Home() {
         `Clear all ${activeRecords.length} entries in “${activeProject.name}”? This can’t be undone.`,
       )
     ) {
-      setRecords((current) =>
-        current.filter((record) => record.projectId !== activeProject.id),
-      );
+      setRecords((current) => {
+        const nextRecords = current.filter(
+          (record) => record.projectId !== activeProject.id,
+        );
+        recordsRef.current = nextRecords;
+        return nextRecords;
+      });
       setToast("Project entries cleared.");
     }
   };
@@ -1165,7 +1206,7 @@ export default function Home() {
         </div>
         <div className="project-summary" aria-label="Project statistics">
           <span><strong>{activeRecords.length}</strong> entries</span>
-          <span><strong>{uniqueCount}</strong> unique</span>
+          <span><strong>{totalScanCount}</strong> scans</span>
         </div>
         <div className="project-actions">
           <button
@@ -1420,6 +1461,9 @@ export default function Home() {
                     </div>
                     <div className="record-meta">
                       <span>{normalizeFormat(record.format)}</span>
+                      <span className={`scan-count ${record.scanCount > 1 ? "is-repeat" : ""}`}>
+                        <Repeat2 size={11} /> {record.scanCount} {record.scanCount === 1 ? "scan" : "scans"}
+                      </span>
                       <time dateTime={record.scannedAt}>
                         {new Date(record.scannedAt).toLocaleString("en-US", {
                           month: "2-digit",
@@ -1435,7 +1479,13 @@ export default function Home() {
                   <button
                     className="delete-record"
                     type="button"
-                    onClick={() => setRecords((current) => current.filter((item) => item.id !== record.id))}
+                    onClick={() =>
+                      setRecords((current) => {
+                        const nextRecords = current.filter((item) => item.id !== record.id);
+                        recordsRef.current = nextRecords;
+                        return nextRecords;
+                      })
+                    }
                     aria-label={`Delete barcode ${record.value}`}
                   >
                     <Trash2 size={16} />

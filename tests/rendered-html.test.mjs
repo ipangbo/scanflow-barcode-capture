@@ -26,6 +26,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Entries/);
+  assert.match(html, /<strong>0<\/strong> scans/);
   assert.doesNotMatch(html, /Device only/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
@@ -74,4 +75,14 @@ test("iPhone Safari receives a native switch haptic fallback", async () => {
   assert.match(pageSource, /input\.setAttribute\("switch", ""\)/);
   assert.match(pageSource, /if \(!vibrated\) triggerIOSSwitchHaptic\(\)/);
   assert.match(pageSource, /useState<ScannerMode>\("university"\)/);
+});
+
+test("repeat barcodes increment one aggregated entry", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /scanCount: existing\.scanCount \+ 1/);
+  assert.match(pageSource, /currentRecords\.filter\(\(item\) => item\.id !== record\.id\)/);
+  assert.match(pageSource, /existing\.scanCount \+= record\.scanCount/);
+  assert.match(pageSource, /"Scan Count"/);
+  assert.match(pageSource, /record\.scanCount === 1 \? "scan" : "scans"/);
 });

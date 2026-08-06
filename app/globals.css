@@ -360,8 +360,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .record-value-line strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-geist-mono), monospace; font-size: 14px; letter-spacing: -0.015em; }
 .record-value-line svg { flex: 0 0 auto; color: #94988f; opacity: 0; transition: opacity 120ms ease; }
 .record-value-line button:hover svg { opacity: 1; }
-.record-meta { display: flex; align-items: center; gap: 9px; margin-top: 6px; }
+.record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; margin-top: 6px; }
 .record-meta span { padding: 3px 6px; border-radius: 4px; background: #e9eddb; color: #68733d; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 750; }
+.record-meta .scan-count { display: inline-flex; align-items: center; gap: 4px; background: #efeee8; color: #70746c; }
+.record-meta .scan-count.is-repeat { background: #ffe5de; color: #a64431; }
 .record-meta time { color: #92968d; font-family: var(--font-geist-mono), monospace; font-size: 10px; }
 .delete-record { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #a5a89f; cursor: pointer; opacity: 0; transition: opacity 120ms ease, color 120ms ease, background 120ms ease; }
 .record-row:hover .delete-record, .delete-record:focus-visible { opacity: 1; }
