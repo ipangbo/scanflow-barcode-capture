@@ -91,8 +91,22 @@ test("TXT export contains only one barcode value per line", async () => {
   const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
   assert.match(pageSource, /const exportTxt = \(\) =>/);
+  assert.match(pageSource, /format === "txt"/);
   assert.match(pageSource, /record\.value\.replace\(\/\[\\r\\n\]\+\/g, ""\)/);
-  assert.match(pageSource, /values\.join\("\\r\\n"\)/);
+  assert.match(pageSource, /\.join\("\\r\\n"\)/);
   assert.match(pageSource, /text\/plain;charset=utf-8/);
-  assert.match(pageSource, /<FileText size=\{16\} \/> TXT/);
+  assert.match(pageSource, /Plain barcode values/);
+});
+
+test("export uses one secondary page with download and email actions", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /className="export-open-button"/);
+  assert.match(pageSource, /className="export-page"/);
+  assert.match(pageSource, /Back to scanner/);
+  assert.match(pageSource, /mailto:\?subject=/);
+  assert.match(pageSource, /emailExport\("txt"\)/);
+  assert.match(pageSource, /emailExport\("csv"\)/);
+  assert.match(pageSource, /emailExport\("json"\)/);
+  assert.match(pageSource, /The selected export is placed in the message body\./);
 });

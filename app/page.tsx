@@ -6,6 +6,7 @@ import {
 } from "@zxing/browser";
 import { DecodeHintType } from "@zxing/library";
 import {
+  ArrowLeft,
   Braces,
   Camera,
   Check,
@@ -21,6 +22,7 @@ import {
   Keyboard,
   Lightbulb,
   LightbulbOff,
+  Mail,
   Pencil,
   Plus,
   Repeat2,
@@ -134,6 +136,7 @@ type AdvancedCameraConstraint = MediaTrackConstraintSet & {
 type ScannerStatus = "idle" | "starting" | "scanning" | "error";
 type ScannerEngine = "native" | "zxing" | null;
 type ProjectDialogMode = "create" | "rename" | null;
+type ExportFormat = "txt" | "csv" | "json";
 
 type ScanProject = {
   id: string;
@@ -312,6 +315,7 @@ export default function Home() {
   const [projectDialog, setProjectDialog] = useState<ProjectDialogMode>(null);
   const [projectName, setProjectName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [scanMode, setScanMode] = useState<ScannerMode>("university");
   const [scanModeConfigured, setScanModeConfigured] = useState(false);
   const [customFormats, setCustomFormats] = useState<BarcodeFormatId[]>(() => [
@@ -1077,8 +1081,40 @@ export default function Home() {
     [activeRecords],
   );
 
-  const exportCsv = () => {
-    if (!activeProject) return;
+  const getExportPayload = (format: ExportFormat) => {
+    if (!activeProject) return null;
+    const date = new Date().toISOString().slice(0, 10);
+    const stem = `scanflow-${safeFileName(activeProject.name)}-${date}`;
+
+    if (format === "txt") {
+      return {
+        label: "TXT",
+        filename: `${stem}.txt`,
+        mimeType: "text/plain;charset=utf-8",
+        content: [...activeRecords]
+          .reverse()
+          .map((record) => record.value.replace(/[\r\n]+/g, ""))
+          .join("\r\n"),
+      };
+    }
+
+    if (format === "json") {
+      return {
+        label: "JSON",
+        filename: `${stem}.json`,
+        mimeType: "application/json;charset=utf-8",
+        content: JSON.stringify(
+          {
+            project: activeProject,
+            exportedAt: new Date().toISOString(),
+            entries: [...activeRecords].reverse(),
+          },
+          null,
+          2,
+        ),
+      };
+    }
+
     const rows = [...activeRecords].reverse().map((record, index) =>
       [
         String(index + 1),
@@ -1094,44 +1130,37 @@ export default function Home() {
     const header = ["Index", "Barcode", "Format", "Scan Count", "Last Scanned At", "Last Source"]
       .map(safeCsvCell)
       .join(",");
-    downloadBlob(
-      `\uFEFF${[header, ...rows].join("\r\n")}`,
-      "text/csv;charset=utf-8",
-      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.csv`,
-    );
-    setToast(`Exported ${activeRecords.length} entries from “${activeProject.name}”.`);
+    return {
+      label: "CSV",
+      filename: `${stem}.csv`,
+      mimeType: "text/csv;charset=utf-8",
+      content: [header, ...rows].join("\r\n"),
+    };
   };
 
-  const exportJson = () => {
-    if (!activeProject) return;
+  const downloadExport = (format: ExportFormat) => {
+    const payload = getExportPayload(format);
+    if (!payload) return;
     downloadBlob(
-      JSON.stringify(
-        {
-          project: activeProject,
-          exportedAt: new Date().toISOString(),
-          entries: [...activeRecords].reverse(),
-        },
-        null,
-        2,
-      ),
-      "application/json;charset=utf-8",
-      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.json`,
+      format === "csv" ? `\uFEFF${payload.content}` : payload.content,
+      payload.mimeType,
+      payload.filename,
     );
-    setToast(`Exported ${activeRecords.length} entries from “${activeProject.name}”.`);
+    setToast(`Downloaded ${payload.label} export.`);
   };
 
-  const exportTxt = () => {
-    if (!activeProject) return;
-    const values = [...activeRecords]
-      .reverse()
-      .map((record) => record.value.replace(/[\r\n]+/g, ""));
-    downloadBlob(
-      values.join("\r\n"),
-      "text/plain;charset=utf-8",
-      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.txt`,
-    );
-    setToast(`Exported ${activeRecords.length} barcode values as TXT.`);
+  const emailExport = (format: ExportFormat) => {
+    const payload = getExportPayload(format);
+    if (!payload || !activeProject) return;
+    const subject = `ScanFlow ${activeProject.name} ${payload.label} export`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      payload.content,
+    )}`;
   };
+
+  const exportTxt = () => downloadExport("txt");
+  const exportCsv = () => downloadExport("csv");
+  const exportJson = () => downloadExport("json");
 
   const copyValue = async (record: ScanRecord) => {
     try {
@@ -1449,17 +1478,14 @@ export default function Home() {
                 </button>
               )}
             </label>
-            <div className="export-actions">
-              <button type="button" onClick={exportTxt} disabled={!activeRecords.length}>
-                <FileText size={16} /> TXT
-              </button>
-              <button type="button" onClick={exportCsv} disabled={!activeRecords.length}>
-                <FileSpreadsheet size={16} /> CSV
-              </button>
-              <button type="button" onClick={exportJson} disabled={!activeRecords.length}>
-                <Braces size={16} /> JSON
-              </button>
-            </div>
+            <button
+              className="export-open-button"
+              type="button"
+              onClick={() => setExportOpen(true)}
+              disabled={!activeRecords.length}
+            >
+              <Download size={16} /> Export
+            </button>
           </div>
 
           <div className="records-list" aria-live="polite">
@@ -1520,7 +1546,7 @@ export default function Home() {
 
           <div className="export-note">
             <Download size={16} />
-            <p><strong>Export this project anytime</strong><span>TXT contains one barcode per line. CSV and JSON include entry details.</span></p>
+            <p><strong>Download or email this project</strong><span>Choose TXT, CSV, or JSON from the export page.</span></p>
           </div>
         </div>
       </section>
@@ -1529,6 +1555,89 @@ export default function Home() {
         <p><ShieldCheck size={15} /> Privacy first: camera frames, projects, and entries never leave this device.</p>
         <span>ScanFlow · Local-first barcode capture</span>
       </footer>
+
+      {exportOpen && activeProject && (
+        <section
+          className="export-page"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-page-title"
+        >
+          <div className="export-page-shell">
+            <header className="export-page-header">
+              <button type="button" onClick={() => setExportOpen(false)}>
+                <ArrowLeft size={17} /> Back to scanner
+              </button>
+              <div>
+                <p className="panel-kicker">Export</p>
+                <h2 id="export-page-title">Share “{activeProject.name}”</h2>
+                <p>{activeRecords.length} entries · {totalScanCount} scans</p>
+              </div>
+            </header>
+
+            <div className="export-choice-grid">
+              <article className="export-choice">
+                <span className="export-choice-icon"><FileText size={23} /></span>
+                <div className="export-choice-copy">
+                  <span className="export-extension">.TXT</span>
+                  <h3>Plain barcode values</h3>
+                  <p>One aggregated barcode value per line. No headings or extra information.</p>
+                  <code>U12345678<br />U87654321</code>
+                </div>
+                <div className="export-choice-actions">
+                  <button className="is-primary" type="button" onClick={exportTxt}>
+                    <Download size={16} /> Download
+                  </button>
+                  <button type="button" onClick={() => emailExport("txt")}>
+                    <Mail size={16} /> Email
+                  </button>
+                </div>
+              </article>
+
+              <article className="export-choice">
+                <span className="export-choice-icon"><FileSpreadsheet size={23} /></span>
+                <div className="export-choice-copy">
+                  <span className="export-extension">.CSV</span>
+                  <h3>Spreadsheet-ready data</h3>
+                  <p>Barcode values, formats, scan counts, timestamps, and the last source.</p>
+                  <code>Barcode, Format, Scan Count</code>
+                </div>
+                <div className="export-choice-actions">
+                  <button className="is-primary" type="button" onClick={exportCsv}>
+                    <Download size={16} /> Download
+                  </button>
+                  <button type="button" onClick={() => emailExport("csv")}>
+                    <Mail size={16} /> Email
+                  </button>
+                </div>
+              </article>
+
+              <article className="export-choice">
+                <span className="export-choice-icon"><Braces size={23} /></span>
+                <div className="export-choice-copy">
+                  <span className="export-extension">.JSON</span>
+                  <h3>Structured project data</h3>
+                  <p>The project metadata and complete entry objects for system import.</p>
+                  <code>{`{ "project": …, "entries": […] }`}</code>
+                </div>
+                <div className="export-choice-actions">
+                  <button className="is-primary" type="button" onClick={exportJson}>
+                    <Download size={16} /> Download
+                  </button>
+                  <button type="button" onClick={() => emailExport("json")}>
+                    <Mail size={16} /> Email
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <div className="email-export-note">
+              <Mail size={17} />
+              <p><strong>Email opens your default mail app.</strong><span>The selected export is placed in the message body.</span></p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {projectDialog && (
         <div
