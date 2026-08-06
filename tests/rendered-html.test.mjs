@@ -85,6 +85,8 @@ test("continuous scanning has strong multi-channel feedback", async () => {
   assert.match(scannerPanelSource, /key=\{lastScan\?\.eventId \?\? "scan-counter-idle"\}/);
   assert.match(counterSource, /const previousTotal = isAnimating \? Math\.max\(0, total - 1\)/);
   assert.match(counterSource, /className="scan-counter-reel"/);
+  assert.match(counterSource, />scanned<\/span>/);
+  assert.doesNotMatch(counterSource, />saved<\/span>/);
   assert.match(scannerPanelSource, /\? "Scanning"/);
   assert.doesNotMatch(scannerPanelSource, /Scanning · Enhanced/);
   assert.match(scannerPanelSource, /Verifying…/);

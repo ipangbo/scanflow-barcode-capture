@@ -14,7 +14,7 @@ export function ScanCounter({ total, isAnimating }: ScanCounterProps) {
       className={`scan-counter ${isAnimating ? "is-counting" : ""}`}
       role="status"
       aria-live="polite"
-      aria-label={`${total} scans saved in this project`}
+      aria-label={`${total} barcodes scanned in this project`}
     >
       <span className="scan-counter-digits" aria-hidden="true">
         {digits.map((digit, index) => {
@@ -38,7 +38,7 @@ export function ScanCounter({ total, isAnimating }: ScanCounterProps) {
           );
         })}
       </span>
-      <span className="scan-counter-label" aria-hidden="true">saved</span>
+      <span className="scan-counter-label" aria-hidden="true">scanned</span>
     </div>
   );
 }
