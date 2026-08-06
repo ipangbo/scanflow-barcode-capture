@@ -3,8 +3,8 @@
 import {
   BarcodeFormat,
   BrowserMultiFormatReader,
-  type IScannerControls,
 } from "@zxing/browser";
+import { DecodeHintType } from "@zxing/library";
 import {
   Braces,
   Camera,
@@ -13,6 +13,7 @@ import {
   Database,
   Download,
   FileSpreadsheet,
+  Focus,
   Keyboard,
   Lightbulb,
   LightbulbOff,
@@ -23,6 +24,7 @@ import {
   Volume2,
   VolumeX,
   X,
+  ZoomIn,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -30,8 +32,74 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const STORAGE_KEY = "liansao.scans.v1";
 const SETTINGS_KEY = "liansao.settings.v1";
 const DUPLICATE_COOLDOWN_MS = 1800;
+const FRAME_INTERVAL_MS = 90;
+
+const ZXING_FORMATS = [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.CODE_39,
+  BarcodeFormat.CODE_93,
+  BarcodeFormat.ITF,
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.DATA_MATRIX,
+];
+
+const NATIVE_FORMATS = [
+  "ean_13",
+  "ean_8",
+  "upc_a",
+  "upc_e",
+  "code_128",
+  "code_39",
+  "code_93",
+  "itf",
+  "qr_code",
+  "data_matrix",
+  "pdf417",
+  "aztec",
+  "codabar",
+] as const;
+
+const nativeFormatNames: Record<string, string> = {
+  ean_13: "EAN_13",
+  ean_8: "EAN_8",
+  upc_a: "UPC_A",
+  upc_e: "UPC_E",
+  code_128: "CODE_128",
+  code_39: "CODE_39",
+  code_93: "CODE_93",
+  itf: "ITF",
+  qr_code: "QR_CODE",
+  data_matrix: "DATA_MATRIX",
+  pdf417: "PDF_417",
+  aztec: "AZTEC",
+  codabar: "CODABAR",
+};
+
+type DetectedBarcode = { rawValue: string; format: string };
+type NativeBarcodeDetector = {
+  detect: (source: CanvasImageSource) => Promise<DetectedBarcode[]>;
+};
+type NativeBarcodeDetectorConstructor = {
+  new (options?: { formats?: string[] }): NativeBarcodeDetector;
+  getSupportedFormats: () => Promise<string[]>;
+};
+type CameraCapabilities = MediaTrackCapabilities & {
+  focusMode?: string[];
+  torch?: boolean;
+  zoom?: { min: number; max: number; step: number };
+};
+type AdvancedCameraConstraint = MediaTrackConstraintSet & {
+  focusMode?: string;
+  torch?: boolean;
+  zoom?: number;
+};
 
 type ScannerStatus = "idle" | "starting" | "scanning" | "error";
+type ScannerEngine = "native" | "zxing" | null;
 
 type ScanRecord = {
   id: string;
@@ -72,6 +140,17 @@ function normalizeFormat(format: string) {
   return formatNames[format] ?? format.replaceAll("_", " ");
 }
 
+function createHighAccuracyReader() {
+  const hints = new Map<DecodeHintType, unknown>();
+  hints.set(DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS);
+  hints.set(DecodeHintType.TRY_HARDER, true);
+  hints.set(DecodeHintType.ASSUME_GS1, true);
+  return new BrowserMultiFormatReader(hints, {
+    delayBetweenScanAttempts: FRAME_INTERVAL_MS,
+    delayBetweenScanSuccess: 220,
+  });
+}
+
 function downloadBlob(content: string, type: string, filename: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -106,8 +185,11 @@ function friendlyCameraError(error: unknown) {
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scanTimerRef = useRef<number | null>(null);
+  const scanningRef = useRef(false);
   const recentScansRef = useRef(new Map<string, number>());
   const feedbackRef = useRef({ sound: true, vibration: true });
 
@@ -124,6 +206,13 @@ export default function Home() {
   const [vibrationOn, setVibrationOn] = useState(true);
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
+  const [engine, setEngine] = useState<ScannerEngine>(null);
+  const [zoom, setZoom] = useState(1);
+  const [zoomRange, setZoomRange] = useState<{
+    min: number;
+    max: number;
+    step: number;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -226,16 +315,47 @@ export default function Home() {
     [playFeedback],
   );
 
+  const acceptDecodedValue = useCallback(
+    (value: string, format: string) => {
+      const now = Date.now();
+      const previous = recentScansRef.current.get(value) ?? 0;
+      if (now - previous < DUPLICATE_COOLDOWN_MS) return;
+
+      recentScansRef.current.set(value, now);
+      for (const [key, timestamp] of recentScansRef.current) {
+        if (now - timestamp > 10_000) recentScansRef.current.delete(key);
+      }
+
+      addRecord(value, format, "camera");
+    },
+    [addRecord],
+  );
+
   const stopScanner = useCallback(() => {
-    controlsRef.current?.stop();
-    controlsRef.current = null;
+    scanningRef.current = false;
+    if (scanTimerRef.current !== null) {
+      window.clearTimeout(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     readerRef.current = null;
     setTorchOn(false);
     setTorchAvailable(false);
+    setZoomRange(null);
+    setEngine(null);
     setStatus("idle");
   }, []);
 
-  useEffect(() => () => controlsRef.current?.stop(), []);
+  useEffect(
+    () => () => {
+      scanningRef.current = false;
+      if (scanTimerRef.current !== null) window.clearTimeout(scanTimerRef.current);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
 
   const startScanner = useCallback(async () => {
     if (status === "starting" || status === "scanning") return;
@@ -250,59 +370,215 @@ export default function Home() {
     }
 
     try {
-      const reader = new BrowserMultiFormatReader(undefined, {
-        delayBetweenScanAttempts: 120,
-        delayBetweenScanSuccess: 250,
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30 },
+        },
       });
-      readerRef.current = reader;
+      streamRef.current = stream;
 
-      const controls = await reader.decodeFromConstraints(
-        {
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        },
-        videoRef.current ?? undefined,
-        (result) => {
-          if (!result) return;
+      const video = videoRef.current;
+      if (!video) throw new Error("Video preview is unavailable");
+      video.srcObject = stream;
+      await video.play();
 
-          const value = result.getText();
-          const now = Date.now();
-          const previous = recentScansRef.current.get(value) ?? 0;
-          if (now - previous < DUPLICATE_COOLDOWN_MS) return;
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error("Camera track is unavailable");
 
-          recentScansRef.current.set(value, now);
-          for (const [key, timestamp] of recentScansRef.current) {
-            if (now - timestamp > 10_000) recentScansRef.current.delete(key);
+      try {
+        const capabilities = track.getCapabilities() as CameraCapabilities;
+        const focusMode = capabilities.focusMode?.includes("continuous")
+          ? "continuous"
+          : capabilities.focusMode?.includes("single-shot")
+            ? "single-shot"
+            : null;
+
+        if (focusMode) {
+          await track.applyConstraints({
+            advanced: [{ focusMode } as AdvancedCameraConstraint],
+          });
+        }
+
+        setTorchAvailable(capabilities.torch === true);
+        if (capabilities.zoom && capabilities.zoom.max > capabilities.zoom.min) {
+          const currentZoom = track.getSettings().zoom ?? capabilities.zoom.min;
+          setZoom(currentZoom);
+          setZoomRange(capabilities.zoom);
+        } else {
+          setZoomRange(null);
+        }
+      } catch {
+        setTorchAvailable(false);
+        setZoomRange(null);
+      }
+
+      let detector: NativeBarcodeDetector | null = null;
+      let reader: BrowserMultiFormatReader | null = null;
+      const Detector = (
+        window as typeof window & {
+          BarcodeDetector?: NativeBarcodeDetectorConstructor;
+        }
+      ).BarcodeDetector;
+
+      if (Detector?.getSupportedFormats) {
+        try {
+          const supportedFormats = await Detector.getSupportedFormats();
+          const preferredFormats = NATIVE_FORMATS.filter((format) =>
+            supportedFormats.includes(format),
+          );
+          const coversRetailCodes =
+            preferredFormats.includes("code_128") &&
+            (preferredFormats.includes("ean_13") || preferredFormats.includes("upc_a"));
+          if (coversRetailCodes) {
+            detector = new Detector({ formats: [...preferredFormats] });
           }
+        } catch {
+          detector = null;
+        }
+      }
 
-          const formatKey = BarcodeFormat[result.getBarcodeFormat()] ?? "UNKNOWN";
-          addRecord(value, formatKey, "camera");
-        },
-      );
+      if (!detector) {
+        reader = createHighAccuracyReader();
+        readerRef.current = reader;
+      }
 
-      controlsRef.current = controls;
-      setTorchAvailable(Boolean(controls.switchTorch));
+      setEngine(detector ? "native" : "zxing");
+      scanningRef.current = true;
       setStatus("scanning");
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) throw new Error("Scanner canvas is unavailable");
+      let nativeErrors = 0;
+
+      const scanFrame = async () => {
+        if (!scanningRef.current) return;
+
+        try {
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            const sourceWidth = video.videoWidth;
+            const sourceHeight = video.videoHeight;
+            const videoRect = video.getBoundingClientRect();
+            const frameRect = frameRef.current?.getBoundingClientRect();
+
+            if (sourceWidth && sourceHeight && videoRect.width && videoRect.height) {
+              const objectFitScale = Math.max(
+                videoRect.width / sourceWidth,
+                videoRect.height / sourceHeight,
+              );
+              const overflowX = (sourceWidth * objectFitScale - videoRect.width) / 2;
+              const overflowY = (sourceHeight * objectFitScale - videoRect.height) / 2;
+
+              const sourceX = frameRect
+                ? Math.max(0, (frameRect.left - videoRect.left + overflowX) / objectFitScale)
+                : 0;
+              const sourceY = frameRect
+                ? Math.max(0, (frameRect.top - videoRect.top + overflowY) / objectFitScale)
+                : 0;
+              const cropWidth = frameRect
+                ? Math.min(sourceWidth - sourceX, frameRect.width / objectFitScale)
+                : sourceWidth;
+              const cropHeight = frameRect
+                ? Math.min(sourceHeight - sourceY, frameRect.height / objectFitScale)
+                : sourceHeight;
+              const outputScale = Math.min(1, 1600 / cropWidth);
+
+              const outputWidth = Math.max(1, Math.round(cropWidth * outputScale));
+              const outputHeight = Math.max(1, Math.round(cropHeight * outputScale));
+              if (canvas.width !== outputWidth) canvas.width = outputWidth;
+              if (canvas.height !== outputHeight) canvas.height = outputHeight;
+              context.drawImage(
+                video,
+                sourceX,
+                sourceY,
+                cropWidth,
+                cropHeight,
+                0,
+                0,
+                canvas.width,
+                canvas.height,
+              );
+
+              if (detector) {
+                try {
+                  const results = await detector.detect(canvas);
+                  const result = results[0];
+                  if (result?.rawValue) {
+                    acceptDecodedValue(
+                      result.rawValue,
+                      nativeFormatNames[result.format] ?? result.format.toUpperCase(),
+                    );
+                  }
+                  nativeErrors = 0;
+                } catch {
+                  nativeErrors += 1;
+                  if (nativeErrors >= 2) {
+                    detector = null;
+                    reader = createHighAccuracyReader();
+                    readerRef.current = reader;
+                    setEngine("zxing");
+                  }
+                }
+              } else if (reader) {
+                try {
+                  const result = reader.decodeFromCanvas(canvas);
+                  acceptDecodedValue(
+                    result.getText(),
+                    BarcodeFormat[result.getBarcodeFormat()] ?? "UNKNOWN",
+                  );
+                } catch {
+                  // A frame without a readable barcode is expected during scanning.
+                }
+              }
+            }
+          }
+        } finally {
+          if (scanningRef.current) {
+            scanTimerRef.current = window.setTimeout(scanFrame, FRAME_INTERVAL_MS);
+          }
+        }
+      };
+
+      void scanFrame();
     } catch (error) {
-      controlsRef.current?.stop();
-      controlsRef.current = null;
+      scanningRef.current = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
       setCameraError(friendlyCameraError(error));
       setStatus("error");
     }
-  }, [addRecord, status]);
+  }, [acceptDecodedValue, status]);
 
   const toggleTorch = async () => {
     const next = !torchOn;
     try {
-      await controlsRef.current?.switchTorch?.(next);
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!track) return;
+      await track.applyConstraints({
+        advanced: [{ torch: next } as AdvancedCameraConstraint],
+      });
       setTorchOn(next);
     } catch {
       setTorchAvailable(false);
       setToast("This device doesn’t support web torch controls.");
+    }
+  };
+
+  const changeZoom = async (value: number) => {
+    setZoom(value);
+    try {
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!track) return;
+      await track.applyConstraints({
+        advanced: [{ zoom: value } as AdvancedCameraConstraint],
+      });
+    } catch {
+      setToast("Camera zoom could not be changed on this device.");
     }
   };
 
@@ -387,12 +663,15 @@ export default function Home() {
     }
   };
 
-  const statusText = {
-    idle: "Ready",
-    starting: "Connecting",
-    scanning: "Scanning continuously",
-    error: "Camera offline",
-  }[status];
+  const statusText = status === "scanning"
+    ? engine === "native"
+      ? "Scanning · Native"
+      : "Scanning · Enhanced"
+    : {
+        idle: "Ready",
+        starting: "Connecting",
+        error: "Camera offline",
+      }[status];
 
   return (
     <main className="app-shell">
@@ -447,8 +726,8 @@ export default function Home() {
                 <div className="placeholder-barcode" aria-hidden="true">
                   {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
                 </div>
-                <p>Position a barcode inside the frame</p>
-                <span>Supports common 1D and 2D codes</span>
+                <p>Keep the full barcode inside the frame</p>
+                <span>Hold steady · avoid glare · leave space at both ends</span>
               </div>
             )}
             {status === "starting" && (
@@ -457,7 +736,7 @@ export default function Home() {
                 <p>Starting camera…</p>
               </div>
             )}
-            <div className="scan-frame" aria-hidden="true">
+            <div className="scan-frame" aria-hidden="true" ref={frameRef}>
               <i /><i /><i /><i />
               {status === "scanning" && <b />}
             </div>
@@ -521,6 +800,30 @@ export default function Home() {
               Vibration
             </button>
             <p><Database size={14} /> Every scan saves automatically on this device</p>
+          </div>
+
+          <div className="quality-controls">
+            <p>
+              <Focus size={14} />
+              {engine === "native"
+                ? "Device-native detection · focused scan zone"
+                : "High-accuracy detection · focused scan zone"}
+            </p>
+            {zoomRange && status === "scanning" && (
+              <label>
+                <ZoomIn size={14} />
+                <span className="sr-only">Camera zoom</span>
+                <input
+                  type="range"
+                  min={zoomRange.min}
+                  max={zoomRange.max}
+                  step={zoomRange.step || 0.1}
+                  value={zoom}
+                  onChange={(event) => void changeZoom(Number(event.target.value))}
+                />
+                <output>{zoom.toFixed(1)}×</output>
+              </label>
+            )}
           </div>
 
           <form className="manual-entry" onSubmit={submitManual}>
