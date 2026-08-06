@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BUILD_NUMBER } from "./build-version";
 
 const STORAGE_KEY = "liansao.scans.v1";
 const SETTINGS_KEY = "liansao.settings.v1";
@@ -1553,7 +1554,10 @@ export default function Home() {
 
       <footer>
         <p><ShieldCheck size={15} /> Privacy first: camera frames, projects, and entries never leave this device.</p>
-        <span>ScanFlow · Local-first barcode capture</span>
+        <span className="footer-meta">
+          <span>ScanFlow · Local-first barcode capture</span>
+          <b>Build {BUILD_NUMBER}</b>
+        </span>
       </footer>
 
       {exportOpen && activeProject && (

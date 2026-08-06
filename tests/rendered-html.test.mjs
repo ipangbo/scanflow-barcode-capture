@@ -15,6 +15,8 @@ async function render() {
 }
 
 test("server-renders the barcode capture workspace", async () => {
+  const versionSource = await readFile(new URL("../app/build-version.ts", import.meta.url), "utf8");
+  const buildNumber = versionSource.match(/BUILD_NUMBER = (\d+)/)?.[1];
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -27,6 +29,8 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Entries/);
   assert.match(html, /<strong>0<\/strong> scans/);
+  assert.ok(buildNumber, "build number should be readable");
+  assert.match(html, new RegExp(`Build\\s*(?:<!-- -->)?${buildNumber}`));
   assert.doesNotMatch(html, /Device only/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
@@ -109,4 +113,16 @@ test("export uses one secondary page with download and email actions", async () 
   assert.match(pageSource, /emailExport\("csv"\)/);
   assert.match(pageSource, /emailExport\("json"\)/);
   assert.match(pageSource, /The selected export is placed in the message body\./);
+});
+
+test("build number is shown in the footer and increments before builds", async () => {
+  const [pageSource, packageSource, incrementSource] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/increment-build-version.mjs", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(pageSource, /Build \{BUILD_NUMBER\}/);
+  assert.match(packageSource, /"prebuild": "node scripts\/increment-build-version\.mjs"/);
+  assert.match(incrementSource, /currentBuild \+ 1/);
 });
