@@ -202,6 +202,9 @@ test("export uses one secondary page with download and email actions", async () 
 
   assert.match(recordsSource, /className="export-open-button"/);
   assert.match(exportPageSource, /className="export-page"/);
+  assert.match(exportPageSource, /className="export-page-stats"/);
+  assert.match(exportPageSource, /className="export-choice-heading"/);
+  assert.match(exportPageSource, /className="export-choice-icon"[^]*className="export-extension">\.TXT/);
   assert.match(exportPageSource, /Back to scanner/);
   assert.match(pageSource, /mailto:\?subject=/);
   assert.match(exportPageSource, /onEmail\("txt"\)/);

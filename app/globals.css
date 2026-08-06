@@ -470,25 +470,29 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 
 .export-page { position: fixed; z-index: 35; inset: 0; overflow-y: auto; background: radial-gradient(circle at 90% 0%, rgba(201, 244, 93, 0.18), transparent 26rem), var(--paper); animation: export-page-in 180ms ease-out; }
 .export-page-shell { width: min(1180px, 100%); min-height: 100%; margin: 0 auto; padding: 32px; }
-.export-page-header { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: start; gap: 30px; padding-bottom: 28px; border-bottom: 1px solid rgba(23, 25, 22, 0.22); }
+.export-page-header { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: start; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(23, 25, 22, 0.22); }
 .export-page-header > button { display: inline-flex; align-items: center; gap: 7px; width: max-content; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 700; }
 .export-page-header > button:hover { border-color: #a9ada3; background: var(--white); }
 .export-page-header h2 { margin: 8px 0 5px; font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.05em; line-height: 1.05; }
-.export-page-header div > p:last-child { margin: 0; color: var(--muted); font-size: 12px; }
-.export-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
-.export-choice { display: flex; flex-direction: column; min-width: 0; min-height: 360px; padding: 22px; border: 1px solid var(--ink); border-radius: 16px; background: var(--surface); box-shadow: 0 10px 30px rgba(23, 25, 22, 0.05); }
-.export-choice-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: var(--ink); color: var(--lime); }
-.export-choice-copy { margin-top: 22px; }
-.export-extension { color: #6c7452; font-family: var(--font-geist-mono), monospace; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; }
-.export-choice h3 { margin: 8px 0; font-size: 20px; letter-spacing: -0.025em; }
+.export-page-title { min-width: 0; }
+.export-page-stats { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.export-page-stats span { padding: 5px 8px; border: 1px solid #d2d4ca; border-radius: 999px; background: rgba(251, 250, 245, 0.72); color: var(--muted); font-size: 10px; }
+.export-page-stats strong { color: var(--ink); font-family: var(--font-geist-mono), monospace; font-size: 11px; }
+.export-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; margin-top: 24px; }
+.export-choice { display: flex; flex-direction: column; min-width: 0; min-height: 300px; padding: 18px; border: 1px solid var(--ink); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 24px rgba(23, 25, 22, 0.045); }
+.export-choice-heading { display: grid; grid-template-columns: 40px auto minmax(0, 1fr); align-items: center; gap: 9px; min-width: 0; }
+.export-choice-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--ink); color: var(--lime); }
+.export-choice-copy { display: flex; flex: 1; flex-direction: column; margin-top: 17px; }
+.export-extension { padding: 4px 6px; border-radius: 5px; background: #e9eddb; color: #66703f; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 800; letter-spacing: 0.07em; }
+.export-choice h3 { min-width: 0; margin: 0; font-size: 16px; letter-spacing: -0.02em; line-height: 1.2; }
 .export-choice p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
-.export-choice code { display: block; min-height: 48px; margin-top: 18px; padding: 11px; border-radius: 8px; background: #efeee8; color: #666b62; white-space: normal; font-size: 9px; line-height: 1.5; }
-.export-choice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding-top: 24px; }
+.export-choice code { display: block; min-height: 46px; margin-top: auto; padding: 10px 11px; border: 1px solid #e1e0d9; border-radius: 8px; background: #efeee8; color: #666b62; white-space: normal; font-size: 9px; line-height: 1.5; }
+.export-choice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 16px; }
 .export-choice-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: #efeee8; color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 750; }
 .export-choice-actions button:hover { border-color: #a9ada3; background: #e7e6df; }
 .export-choice-actions .is-primary { border-color: var(--ink); background: var(--ink); color: var(--surface); }
 .export-choice-actions .is-primary:hover { background: #30332d; }
-.email-export-note { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 14px 16px; border: 1px solid #dfe8c6; border-radius: 11px; background: #f2f6e8; color: #576038; }
+.email-export-note { display: flex; align-items: center; gap: 10px; width: max-content; max-width: 100%; margin-top: 14px; padding: 10px 12px; border: 1px solid #dfe8c6; border-radius: 10px; background: #f2f6e8; color: #576038; }
 .email-export-note > svg { flex: 0 0 auto; }
 .email-export-note p { margin: 0; }
 .email-export-note strong, .email-export-note span { display: block; }
@@ -596,7 +600,6 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .workspace { grid-template-columns: 1fr; }
   .records-panel { border-left: 0; border-top: 1px solid var(--ink); }
   .records-list { max-height: 520px; }
-  .export-choice-grid { grid-template-columns: 1fr; }
   .export-choice { min-height: 0; }
 }
 
@@ -627,8 +630,8 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .export-page-shell { padding: 18px 12px 24px; }
   .export-page-header { grid-template-columns: 1fr; gap: 20px; padding-bottom: 22px; }
   .export-page-header h2 { font-size: 30px; }
-  .export-choice-grid { margin-top: 18px; }
-  .export-choice { padding: 18px; }
+  .export-choice-grid { grid-template-columns: 1fr; margin-top: 18px; }
+  .export-choice { padding: 16px; }
   .dialog-backdrop { padding: 10px; }
   .settings-dialog { max-height: calc(100vh - 20px); padding: 18px; border-radius: 14px; }
   .mode-options { grid-template-columns: 1fr; }

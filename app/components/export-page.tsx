@@ -37,19 +37,24 @@ export function ExportPage({
           <button type="button" onClick={onClose}>
             <ArrowLeft size={17} /> Back to scanner
           </button>
-          <div>
+          <div className="export-page-title">
             <p className="panel-kicker">Export</p>
             <h2 id="export-page-title">Share “{project.name}”</h2>
-            <p>{entryCount} entries · {totalScanCount} scans</p>
+            <div className="export-page-stats" aria-label={`${entryCount} entries and ${totalScanCount} scans`}>
+              <span><strong>{entryCount}</strong> entries</span>
+              <span><strong>{totalScanCount}</strong> scans</span>
+            </div>
           </div>
         </header>
 
         <div className="export-choice-grid">
           <article className="export-choice">
-            <span className="export-choice-icon"><FileText size={23} /></span>
-            <div className="export-choice-copy">
+            <div className="export-choice-heading">
+              <span className="export-choice-icon"><FileText size={20} /></span>
               <span className="export-extension">.TXT</span>
               <h3>Plain barcode values</h3>
+            </div>
+            <div className="export-choice-copy">
               <p>One aggregated barcode value per line. No headings or extra information.</p>
               <code>U12345678<br />U87654321</code>
             </div>
@@ -64,10 +69,12 @@ export function ExportPage({
           </article>
 
           <article className="export-choice">
-            <span className="export-choice-icon"><FileSpreadsheet size={23} /></span>
-            <div className="export-choice-copy">
+            <div className="export-choice-heading">
+              <span className="export-choice-icon"><FileSpreadsheet size={20} /></span>
               <span className="export-extension">.CSV</span>
               <h3>Spreadsheet-ready data</h3>
+            </div>
+            <div className="export-choice-copy">
               <p>Barcode values, formats, scan counts, timestamps, and the last source.</p>
               <code>Barcode, Format, Scan Count</code>
             </div>
@@ -82,10 +89,12 @@ export function ExportPage({
           </article>
 
           <article className="export-choice">
-            <span className="export-choice-icon"><Braces size={23} /></span>
-            <div className="export-choice-copy">
+            <div className="export-choice-heading">
+              <span className="export-choice-icon"><Braces size={20} /></span>
               <span className="export-extension">.JSON</span>
               <h3>Structured project data</h3>
+            </div>
+            <div className="export-choice-copy">
               <p>The project metadata and complete entry objects for system import.</p>
               <code>{`{ "project": …, "entries": […] }`}</code>
             </div>
