@@ -1,5 +1,5 @@
 {
-  "name": "liansao-barcode-capture",
+  "name": "scanflow-barcode-capture",
   "version": "0.1.0",
   "private": true,
   "engines": {

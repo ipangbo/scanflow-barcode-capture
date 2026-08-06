@@ -59,7 +59,7 @@ const formatNames: Record<string, string> = {
   UPC_A: "UPC-A",
   UPC_E: "UPC-E",
   UPC_EAN_EXTENSION: "UPC/EAN EXT",
-  MANUAL: "手动录入",
+  MANUAL: "MANUAL ENTRY",
 };
 
 function createId() {
@@ -92,16 +92,16 @@ function safeCsvCell(value: string) {
 function friendlyCameraError(error: unknown) {
   if (error instanceof DOMException) {
     if (error.name === "NotAllowedError") {
-      return "相机权限未开启，请在浏览器设置中允许访问相机。";
+      return "Camera access is blocked. Allow it in your browser settings.";
     }
     if (error.name === "NotFoundError") {
-      return "没有找到可用的相机。你仍可使用下方的手动录入。";
+      return "No camera was found. You can still use manual entry below.";
     }
     if (error.name === "NotReadableError") {
-      return "相机正被其他应用占用，请关闭后重试。";
+      return "The camera is in use by another app. Close it and try again.";
     }
   }
-  return "暂时无法启动相机，请检查权限或换一个浏览器重试。";
+  return "We couldn’t start the camera. Check permissions or try another browser.";
 }
 
 export default function Home() {
@@ -143,7 +143,7 @@ export default function Home() {
         setVibrationOn(parsed.vibration ?? true);
       }
     } catch {
-      setToast("本地记录读取失败，已为你开启一个新列表。");
+      setToast("Stored scans couldn’t be read. A fresh list has been created.");
     } finally {
       setHydrated(true);
     }
@@ -244,7 +244,7 @@ export default function Home() {
     setStatus("starting");
 
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
-      setCameraError("相机需要通过安全连接打开。请使用已发布的网址。 ");
+      setCameraError("Camera access requires a secure connection. Use the published site.");
       setStatus("error");
       return;
     }
@@ -302,7 +302,7 @@ export default function Home() {
       setTorchOn(next);
     } catch {
       setTorchAvailable(false);
-      setToast("当前设备暂不支持网页手电筒控制。");
+      setToast("This device doesn’t support web torch controls.");
     }
   };
 
@@ -314,13 +314,13 @@ export default function Home() {
   };
 
   const filteredRecords = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
+    const normalizedQuery = query.trim().toLocaleLowerCase("en-US");
     if (!normalizedQuery) return records;
     return records.filter(
       (record) =>
-        record.value.toLocaleLowerCase("zh-CN").includes(normalizedQuery) ||
+        record.value.toLocaleLowerCase("en-US").includes(normalizedQuery) ||
         normalizeFormat(record.format)
-          .toLocaleLowerCase("zh-CN")
+          .toLocaleLowerCase("en-US")
           .includes(normalizedQuery),
     );
   }, [query, records]);
@@ -343,30 +343,30 @@ export default function Home() {
         String(index + 1),
         record.value,
         normalizeFormat(record.format),
-        new Date(record.scannedAt).toLocaleString("zh-CN", { hour12: false }),
-        record.source === "camera" ? "相机" : "手动",
+        new Date(record.scannedAt).toLocaleString("en-US", { hour12: false }),
+        record.source === "camera" ? "Camera" : "Manual",
       ]
         .map(safeCsvCell)
         .join(","),
     );
-    const header = ["序号", "条码内容", "格式", "扫描时间", "来源"]
+    const header = ["Index", "Barcode", "Format", "Scanned At", "Source"]
       .map(safeCsvCell)
       .join(",");
     downloadBlob(
       `\uFEFF${[header, ...rows].join("\r\n")}`,
       "text/csv;charset=utf-8",
-      `连扫-${new Date().toISOString().slice(0, 10)}.csv`,
+      `scanflow-${new Date().toISOString().slice(0, 10)}.csv`,
     );
-    setToast(`已导出 ${records.length} 条 CSV 记录。`);
+    setToast(`Exported ${records.length} scans as CSV.`);
   };
 
   const exportJson = () => {
     downloadBlob(
       JSON.stringify([...records].reverse(), null, 2),
       "application/json;charset=utf-8",
-      `连扫-${new Date().toISOString().slice(0, 10)}.json`,
+      `scanflow-${new Date().toISOString().slice(0, 10)}.json`,
     );
-    setToast(`已导出 ${records.length} 条 JSON 记录。`);
+    setToast(`Exported ${records.length} scans as JSON.`);
   };
 
   const copyValue = async (record: ScanRecord) => {
@@ -375,64 +375,64 @@ export default function Home() {
       setCopiedId(record.id);
       window.setTimeout(() => setCopiedId(null), 1300);
     } catch {
-      setToast("复制失败，请长按条码内容复制。");
+      setToast("Copy failed. Press and hold the barcode value instead.");
     }
   };
 
   const clearRecords = () => {
     if (!records.length) return;
-    if (window.confirm(`确定清空全部 ${records.length} 条记录吗？此操作无法撤销。`)) {
+    if (window.confirm(`Clear all ${records.length} scans? This can’t be undone.`)) {
       setRecords([]);
-      setToast("记录已清空。");
+      setToast("Scan history cleared.");
     }
   };
 
   const statusText = {
-    idle: "等待开始",
-    starting: "正在连接相机",
-    scanning: "连续扫描中",
-    error: "相机未连接",
+    idle: "Ready",
+    starting: "Connecting",
+    scanning: "Scanning continuously",
+    error: "Camera offline",
   }[status];
 
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="连扫首页">
+        <a className="brand" href="#top" aria-label="ScanFlow home">
           <span className="brand-mark" aria-hidden="true">
             <i />
             <i />
             <i />
             <i />
           </span>
-          <span>连扫</span>
+          <span>ScanFlow</span>
         </a>
         <div className="local-badge">
           <ShieldCheck size={15} strokeWidth={2.2} />
-          仅存此设备
+          Device only
         </div>
       </header>
 
       <section className="intro" id="top">
         <div>
-          <p className="eyebrow">连续条码采集工作台</p>
-          <h1>把条码，<span>连续收进来。</span></h1>
+          <p className="eyebrow">Continuous barcode capture</p>
+          <h1>Scan one. <span>Then the next.</span></h1>
           <p className="intro-copy">
-            扫描后自动保存并立即准备下一次。无需登录，数据不会离开这台设备。
+            Every scan saves automatically, and the camera stays ready for the next. No login, no uploads.
           </p>
         </div>
-        <div className="stats" aria-label="扫描统计">
-          <div><strong>{records.length}</strong><span>全部记录</span></div>
-          <div><strong>{todayCount}</strong><span>今日扫描</span></div>
-          <div><strong>{uniqueCount}</strong><span>唯一条码</span></div>
+        <div className="stats" aria-label="Scan statistics">
+          <div><strong>{records.length}</strong><span>All scans</span></div>
+          <div><strong>{todayCount}</strong><span>Today</span></div>
+          <div><strong>{uniqueCount}</strong><span>Unique codes</span></div>
         </div>
       </section>
 
-      <section className="workspace" aria-label="条码扫描工作台">
+      <section className="workspace" aria-label="Barcode capture workspace">
         <div className="scanner-panel">
           <div className="panel-heading scanner-heading">
             <div>
-              <p className="panel-kicker">01 / 扫描</p>
-              <h2>取景器</h2>
+              <p className="panel-kicker">01 / SCAN</p>
+              <h2>Viewfinder</h2>
             </div>
             <span className={`status-pill status-${status}`}>
               <i aria-hidden="true" />
@@ -441,20 +441,20 @@ export default function Home() {
           </div>
 
           <div className={`camera-stage ${status === "scanning" ? "is-live" : ""}`}>
-            <video ref={videoRef} muted playsInline aria-label="相机实时画面" />
+            <video ref={videoRef} muted playsInline aria-label="Live camera preview" />
             {status !== "scanning" && status !== "starting" && (
               <div className="camera-placeholder">
                 <div className="placeholder-barcode" aria-hidden="true">
                   {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
                 </div>
-                <p>将条码置于取景框内</p>
-                <span>支持常见一维码与二维码</span>
+                <p>Position a barcode inside the frame</p>
+                <span>Supports common 1D and 2D codes</span>
               </div>
             )}
             {status === "starting" && (
               <div className="camera-placeholder connecting">
                 <span className="spinner" aria-hidden="true" />
-                <p>正在唤醒相机…</p>
+                <p>Starting camera…</p>
               </div>
             )}
             <div className="scan-frame" aria-hidden="true">
@@ -464,7 +464,7 @@ export default function Home() {
             {lastScan && (
               <div className="capture-confirmation" role="status">
                 <Check size={18} strokeWidth={3} />
-                <span>已保存</span>
+                <span>Saved</span>
                 <strong>{lastScan.value}</strong>
               </div>
             )}
@@ -481,12 +481,12 @@ export default function Home() {
             {status === "scanning" ? (
               <button className="primary-button stop-button" type="button" onClick={stopScanner}>
                 <X size={19} />
-                停止扫描
+                Stop scanner
               </button>
             ) : (
               <button className="primary-button" type="button" onClick={startScanner} disabled={status === "starting"}>
                 <Camera size={19} />
-                {status === "starting" ? "正在启动" : "开始连续扫描"}
+                {status === "starting" ? "Starting…" : "Start continuous scan"}
               </button>
             )}
             <button
@@ -494,8 +494,8 @@ export default function Home() {
               type="button"
               onClick={toggleTorch}
               disabled={!torchAvailable || status !== "scanning"}
-              aria-label={torchOn ? "关闭手电筒" : "打开手电筒"}
-              title={torchAvailable ? "手电筒" : "当前设备不支持手电筒控制"}
+              aria-label={torchOn ? "Turn torch off" : "Turn torch on"}
+              title={torchAvailable ? "Torch" : "Torch control is unavailable on this device"}
             >
               {torchOn ? <Lightbulb size={20} /> : <LightbulbOff size={20} />}
             </button>
@@ -503,8 +503,8 @@ export default function Home() {
               className="icon-button"
               type="button"
               onClick={() => setSoundOn((current) => !current)}
-              aria-label={soundOn ? "关闭提示音" : "开启提示音"}
-              title={soundOn ? "关闭提示音" : "开启提示音"}
+              aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+              title={soundOn ? "Turn sound off" : "Turn sound on"}
             >
               {soundOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
             </button>
@@ -518,23 +518,23 @@ export default function Home() {
               aria-pressed={vibrationOn}
             >
               <span aria-hidden="true" />
-              震动反馈
+              Vibration
             </button>
-            <p><Database size={14} /> 每次扫描都会自动本地保存</p>
+            <p><Database size={14} /> Every scan saves automatically on this device</p>
           </div>
 
           <form className="manual-entry" onSubmit={submitManual}>
-            <label htmlFor="manual-code"><Keyboard size={16} /> 手动录入</label>
+            <label htmlFor="manual-code"><Keyboard size={16} /> Manual entry</label>
             <div>
               <input
                 id="manual-code"
                 value={manualValue}
                 onChange={(event) => setManualValue(event.target.value)}
-                placeholder="输入条码后按回车"
+                placeholder="Enter a barcode and press Return"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button type="submit" disabled={!manualValue.trim()}>添加</button>
+              <button type="submit" disabled={!manualValue.trim()}>Add</button>
             </div>
           </form>
         </div>
@@ -542,8 +542,8 @@ export default function Home() {
         <div className="records-panel">
           <div className="panel-heading records-heading">
             <div>
-              <p className="panel-kicker">02 / 记录</p>
-              <h2>扫描清单 <span>{records.length}</span></h2>
+              <p className="panel-kicker">02 / HISTORY</p>
+              <h2>Scan log <span>{records.length}</span></h2>
             </div>
             <button
               className="clear-button"
@@ -551,22 +551,22 @@ export default function Home() {
               onClick={clearRecords}
               disabled={!records.length}
             >
-              <Trash2 size={15} /> 清空
+              <Trash2 size={15} /> Clear all
             </button>
           </div>
 
           <div className="record-tools">
             <label className="search-box">
               <Search size={17} />
-              <span className="sr-only">搜索记录</span>
+              <span className="sr-only">Search scans</span>
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索条码或格式"
+                placeholder="Search barcode or format"
               />
               {query && (
-                <button type="button" onClick={() => setQuery("")} aria-label="清除搜索">
+                <button type="button" onClick={() => setQuery("")} aria-label="Clear search">
                   <X size={15} />
                 </button>
               )}
@@ -583,14 +583,14 @@ export default function Home() {
 
           <div className="records-list" aria-live="polite">
             {!hydrated ? (
-              <div className="empty-state"><span className="spinner dark" /><p>正在读取本地记录…</p></div>
+              <div className="empty-state"><span className="spinner dark" /><p>Loading local scans…</p></div>
             ) : filteredRecords.length ? (
               filteredRecords.map((record, index) => (
                 <article className="record-row" key={record.id}>
                   <span className="record-number">{String(filteredRecords.length - index).padStart(2, "0")}</span>
                   <div className="record-main">
                     <div className="record-value-line">
-                      <button type="button" onClick={() => copyValue(record)} title="复制条码">
+                      <button type="button" onClick={() => copyValue(record)} title="Copy barcode">
                         <strong>{record.value}</strong>
                         {copiedId === record.id ? <Check size={14} /> : <Copy size={14} />}
                       </button>
@@ -598,7 +598,7 @@ export default function Home() {
                     <div className="record-meta">
                       <span>{normalizeFormat(record.format)}</span>
                       <time dateTime={record.scannedAt}>
-                        {new Date(record.scannedAt).toLocaleString("zh-CN", {
+                        {new Date(record.scannedAt).toLocaleString("en-US", {
                           month: "2-digit",
                           day: "2-digit",
                           hour: "2-digit",
@@ -613,7 +613,7 @@ export default function Home() {
                     className="delete-record"
                     type="button"
                     onClick={() => setRecords((current) => current.filter((item) => item.id !== record.id))}
-                    aria-label={`删除条码 ${record.value}`}
+                    aria-label={`Delete barcode ${record.value}`}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -622,22 +622,22 @@ export default function Home() {
             ) : (
               <div className="empty-state">
                 <span className="empty-icon"><ScanLine size={27} /></span>
-                <h3>{query ? "没有匹配的记录" : "第一条记录会出现在这里"}</h3>
-                <p>{query ? "换个关键词试试。" : "启动相机连续扫描，或从左侧手动录入。"}</p>
+                <h3>{query ? "No matching scans" : "Your first scan will appear here"}</h3>
+                <p>{query ? "Try another search." : "Start the camera or use manual entry on the left."}</p>
               </div>
             )}
           </div>
 
           <div className="export-note">
             <Download size={16} />
-            <p><strong>随时带走数据</strong><span>CSV 可直接用 Excel 打开，JSON 适合系统导入。</span></p>
+            <p><strong>Export your data anytime</strong><span>CSV opens in Excel. JSON is ready for system import.</span></p>
           </div>
         </div>
       </section>
 
       <footer>
-        <p><ShieldCheck size={15} /> 隐私优先：相机画面与扫描记录均不会上传。</p>
-        <span>连扫 · Local-first barcode capture</span>
+        <p><ShieldCheck size={15} /> Privacy first: camera frames and scan history never leave this device.</p>
+        <span>ScanFlow · Local-first barcode capture</span>
       </footer>
 
       {toast && <div className="toast" role="status">{toast}</div>}

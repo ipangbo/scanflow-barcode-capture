@@ -19,9 +19,9 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>连扫｜连续条码扫描与本地导出<\/title>/i);
-  assert.match(html, /连续条码采集工作台/);
-  assert.match(html, /开始连续扫描/);
-  assert.match(html, /扫描清单/);
+  assert.match(html, /<title>ScanFlow \| Continuous Barcode Scanning &amp; Local Export<\/title>/i);
+  assert.match(html, /Continuous barcode capture/);
+  assert.match(html, /Start continuous scan/);
+  assert.match(html, /Scan log/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });

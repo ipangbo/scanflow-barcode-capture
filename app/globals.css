@@ -23,7 +23,7 @@ body {
     radial-gradient(circle at 90% 0%, rgba(201, 244, 93, 0.18), transparent 26rem),
     var(--paper);
   color: var(--ink);
-  font-family: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
   min-width: 320px;
 }
 

@@ -22,23 +22,23 @@ export async function generateMetadata(): Promise<Metadata> {
   const imageUrl = `${origin}/og.png`;
 
   return {
-    title: "连扫｜连续条码扫描与本地导出",
-    description: "连续扫描条码，自动保存到当前设备，并一键导出 CSV 或 JSON。",
+    title: "ScanFlow | Continuous Barcode Scanning & Local Export",
+    description: "Scan barcodes continuously, save them on this device, and export CSV or JSON anytime.",
     icons: {
       icon: "/favicon.png",
       shortcut: "/favicon.png",
     },
     openGraph: {
-      title: "连扫｜连续条码扫描与本地导出",
-      description: "无需登录，连续扫描，本地保存，一键导出。",
+      title: "ScanFlow | Continuous Barcode Scanning",
+      description: "Continuous scanning, local storage, and one-click export. No login required.",
       type: "website",
-      locale: "zh_CN",
-      images: [{ url: imageUrl, width: 1731, height: 909, alt: "连扫条码扫描工具" }],
+      locale: "en_US",
+      images: [{ url: imageUrl, width: 1731, height: 909, alt: "ScanFlow barcode scanner" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "连扫｜连续条码扫描与本地导出",
-      description: "无需登录，连续扫描，本地保存，一键导出。",
+      title: "ScanFlow | Continuous Barcode Scanning",
+      description: "Continuous scanning, local storage, and one-click export. No login required.",
       images: [imageUrl],
     },
   };
@@ -46,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
