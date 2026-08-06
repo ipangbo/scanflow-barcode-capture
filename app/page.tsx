@@ -48,6 +48,8 @@ const PROJECTS_KEY = "scanflow.projects.v1";
 const DEFAULT_PROJECT_ID = "inbox";
 const DUPLICATE_COOLDOWN_MS = 1800;
 const FRAME_INTERVAL_MS = 90;
+const DECODE_CONFIRMATION_WINDOW_MS = 700;
+const REQUIRED_DECODE_MATCHES = 2;
 
 type BarcodeFormatId =
   | "code_128"
@@ -75,7 +77,7 @@ type BarcodeDefinition = {
 };
 
 const BARCODE_FORMATS: BarcodeDefinition[] = [
-  { id: "code_128", name: "Code 128", kind: "1D", example: "U12345678", nativeFormat: "code_128", zxingFormat: BarcodeFormat.CODE_128 },
+  { id: "code_128", name: "Code 128", kind: "1D", example: "12345678", nativeFormat: "code_128", zxingFormat: BarcodeFormat.CODE_128 },
   { id: "ean_13", name: "EAN-13", kind: "1D", example: "5901234123457", nativeFormat: "ean_13", zxingFormat: BarcodeFormat.EAN_13 },
   { id: "ean_8", name: "EAN-8", kind: "1D", example: "96385074", nativeFormat: "ean_8", zxingFormat: BarcodeFormat.EAN_8 },
   { id: "upc_a", name: "UPC-A", kind: "1D", example: "036000291452", nativeFormat: "upc_a", zxingFormat: BarcodeFormat.UPC_A },
@@ -161,6 +163,12 @@ type DetectionRegion = {
   top: number;
   width: number;
   height: number;
+};
+
+type PendingDecodedValue = {
+  key: string;
+  matches: number;
+  lastSeenAt: number;
 };
 
 const formatNames: Record<string, string> = {
@@ -306,6 +314,7 @@ export default function Home() {
   const detectionTimerRef = useRef<number | null>(null);
   const scanningRef = useRef(false);
   const recentScansRef = useRef(new Map<string, number>());
+  const pendingDecodedValueRef = useRef<PendingDecodedValue | null>(null);
   const feedbackRef = useRef({ sound: true, vibration: true });
   const activeProjectIdRef = useRef(DEFAULT_PROJECT_ID);
   const recordsRef = useRef<ScanRecord[]>([]);
@@ -586,23 +595,52 @@ export default function Home() {
 
   const acceptDecodedValue = useCallback(
     (value: string, format: string) => {
+      const trimmedValue = value.trim();
+      if (!trimmedValue) return false;
+
+      if (scanMode === "university" && !/^[0-9]+$/.test(trimmedValue)) {
+        pendingDecodedValueRef.current = null;
+        return false;
+      }
+
       const now = Date.now();
-      const previous = recentScansRef.current.get(value) ?? 0;
+      const confirmationKey = `${format}\u0000${trimmedValue}`;
+      const pending = pendingDecodedValueRef.current;
+      if (
+        !pending ||
+        pending.key !== confirmationKey ||
+        now - pending.lastSeenAt > DECODE_CONFIRMATION_WINDOW_MS
+      ) {
+        pendingDecodedValueRef.current = {
+          key: confirmationKey,
+          matches: 1,
+          lastSeenAt: now,
+        };
+        return false;
+      }
+
+      pending.matches += 1;
+      pending.lastSeenAt = now;
+      if (pending.matches < REQUIRED_DECODE_MATCHES) return false;
+      pendingDecodedValueRef.current = null;
+
+      const previous = recentScansRef.current.get(trimmedValue) ?? 0;
       if (now - previous < DUPLICATE_COOLDOWN_MS) return false;
 
-      recentScansRef.current.set(value, now);
+      recentScansRef.current.set(trimmedValue, now);
       for (const [key, timestamp] of recentScansRef.current) {
         if (now - timestamp > 10_000) recentScansRef.current.delete(key);
       }
 
-      addRecord(value, format, "camera");
+      addRecord(trimmedValue, format, "camera");
       return true;
     },
-    [addRecord],
+    [addRecord, scanMode],
   );
 
   const stopScanner = useCallback(() => {
     scanningRef.current = false;
+    pendingDecodedValueRef.current = null;
     if (scanTimerRef.current !== null) {
       window.clearTimeout(scanTimerRef.current);
       scanTimerRef.current = null;
@@ -679,6 +717,7 @@ export default function Home() {
 
     setCameraError("");
     setStatus("starting");
+    pendingDecodedValueRef.current = null;
 
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
       setCameraError("Camera access requires a secure connection. Use the published site.");
@@ -1738,7 +1777,7 @@ export default function Home() {
                 <span className="mode-icon"><GraduationCap size={20} /></span>
                 <span className="mode-copy">
                   <strong>University ID</strong>
-                  <small>Code 128 only · best for student and campus IDs</small>
+                  <small>Code 128 · digits only · two-frame confirmation</small>
                 </span>
               </label>
               <label className={draftScanMode === "universal" ? "is-selected" : ""}>

@@ -67,10 +67,21 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(pageSource, /Universal/);
   assert.match(pageSource, /Choose exactly which formats to recognize/);
   assert.match(pageSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
-  assert.match(pageSource, /example: "U12345678"/);
+  assert.match(pageSource, /example: "12345678"/);
   assert.match(pageSource, /example: "5901234123457"/);
   assert.match(pageSource, /example: "https:\/\/example\.edu"/);
   assert.match(pageSource, /createHighAccuracyReader\(enabledFormatIds\)/);
+});
+
+test("camera results require confirmation and University IDs are numeric", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /REQUIRED_DECODE_MATCHES = 2/);
+  assert.match(pageSource, /DECODE_CONFIRMATION_WINDOW_MS = 700/);
+  assert.match(pageSource, /scanMode === "university" && !\/\^\[0-9\]\+\$\/\.test\(trimmedValue\)/);
+  assert.match(pageSource, /pending\.matches \+= 1/);
+  assert.match(pageSource, /pending\.matches < REQUIRED_DECODE_MATCHES/);
+  assert.match(pageSource, /Code 128 · digits only · two-frame confirmation/);
 });
 
 test("iPhone Safari receives a native switch haptic fallback", async () => {
