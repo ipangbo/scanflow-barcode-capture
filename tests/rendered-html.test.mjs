@@ -29,11 +29,13 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Inbox/);
   assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
+  assert.match(html, /Your phone and barcode must have the same orientation/);
   assert.match(html, /Entries/);
   assert.match(html, /<strong>0<\/strong> scans/);
   assert.ok(buildNumber, "build number should be readable");
   assert.match(html, new RegExp(`Build\\s*(?:<!-- -->)?${buildNumber}`));
   assert.doesNotMatch(html, /Device only/);
+  assert.doesNotMatch(html, /01\s*\/\s*CAPTURE|02\s*\/\s*ENTRIES/i);
   assert.doesNotMatch(html, /Download or email this project/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });

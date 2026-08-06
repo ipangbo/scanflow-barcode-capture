@@ -40,7 +40,6 @@ export function RecordsPanel({
     <div className="records-panel">
       <div className="panel-heading records-heading">
         <div>
-          <p className="panel-kicker">02 / ENTRIES</p>
           <h2>Entries <span>{activeRecords.length}</span></h2>
         </div>
         <button

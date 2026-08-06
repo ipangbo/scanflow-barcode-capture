@@ -168,9 +168,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.panel-heading h2 { margin: 7px 0 0; font-size: 24px; line-height: 1.1; letter-spacing: -0.04em; }
+.panel-heading h2 { margin: 0; font-size: 24px; line-height: 1.1; letter-spacing: -0.04em; }
 .scanner-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; }
-.scanner-heading .panel-kicker { color: #90958a; }
 .scanner-heading .status-pill { justify-self: end; margin-bottom: 1px; }
 .records-heading h2 span { color: var(--muted); font-size: 15px; font-weight: 550; }
 

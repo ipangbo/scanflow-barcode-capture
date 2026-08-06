@@ -97,7 +97,6 @@ export function ScannerPanel({
     <div className="scanner-panel">
       <div className="panel-heading scanner-heading">
         <div>
-          <p className="panel-kicker">01 / CAPTURE</p>
           <h2>Viewfinder</h2>
         </div>
         <ScanCounter
@@ -125,8 +124,8 @@ export function ScannerPanel({
             <div className="placeholder-barcode" aria-hidden="true">
               {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
             </div>
-            <p>Keep the full barcode inside the frame</p>
-            <span>Hold steady · avoid glare · leave space at both ends</span>
+            <p>Your phone and barcode must have the same orientation</p>
+            <span>Portrait with portrait · landscape with landscape</span>
           </div>
         )}
         {status === "starting" && (
