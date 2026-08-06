@@ -1300,9 +1300,7 @@ export default function Home() {
   };
 
   const statusText = status === "scanning"
-    ? engine === "native"
-      ? "Scanning · Native"
-      : "Scanning · Enhanced"
+    ? "Scanning"
     : {
         idle: "Ready",
         starting: "Connecting",
@@ -1398,6 +1396,18 @@ export default function Home() {
               <p className="panel-kicker">01 / CAPTURE</p>
               <h2>Viewfinder</h2>
             </div>
+            <div
+              key={lastScan?.eventId ?? "scan-scoreboard-idle"}
+              className={`scan-scoreboard ${lastScan ? "is-flipping" : ""}`}
+              role="status"
+              aria-live="polite"
+              aria-label={`${totalScanCount} scans saved in this project`}
+            >
+              <span className="scan-scoreboard-number" aria-hidden="true">
+                <span>{totalScanCount}</span>
+              </span>
+              <span className="scan-scoreboard-label" aria-hidden="true">saved</span>
+            </div>
             <span className={`status-pill status-${status}`}>
               <i aria-hidden="true" />
               {statusText}
@@ -1406,14 +1416,6 @@ export default function Home() {
 
           <div className={`camera-stage ${status === "scanning" ? "is-live" : ""}`}>
             <video ref={videoRef} muted playsInline aria-label="Live camera preview" />
-            <div
-              key={lastScan?.eventId ?? "scan-total-idle"}
-              className={`scan-total ${lastScan ? "is-updated" : ""}`}
-              aria-label={`${totalScanCount} scans saved in this project`}
-            >
-              <strong>{totalScanCount}</strong>
-              <span>saved</span>
-            </div>
             {scanCue && scanCue.kind !== "verifying" && (
               <div
                 key={scanCue.id}

@@ -57,7 +57,10 @@ test("continuous scanning has strong multi-channel feedback", async () => {
   ]);
 
   assert.match(pageSource, /className=\{`scan-flash is-\$\{scanCue\.kind\}`\}/);
-  assert.match(pageSource, /className=\{`scan-total/);
+  assert.match(pageSource, /className=\{`scan-scoreboard/);
+  assert.match(pageSource, /key=\{lastScan\?\.eventId \?\? "scan-scoreboard-idle"\}/);
+  assert.match(pageSource, /\? "Scanning"/);
+  assert.doesNotMatch(pageSource, /Scanning · Enhanced/);
   assert.match(pageSource, /Verifying…/);
   assert.match(pageSource, /Digits only/);
   assert.match(pageSource, /kind === "repeat" \? \[38, 36, 38\] : 55/);
@@ -65,7 +68,9 @@ test("continuous scanning has strong multi-channel feedback", async () => {
   assert.match(pageSource, /frequency: 520/);
   assert.match(stylesheet, /\.scan-flash\.is-saved\s*\{/);
   assert.match(stylesheet, /\.scan-flash\.is-repeat\s*\{/);
-  assert.match(stylesheet, /\.scan-total\.is-updated\s*\{/);
+  assert.match(stylesheet, /\.scan-scoreboard\.is-flipping \.scan-scoreboard-number > span\s*\{/);
+  assert.match(stylesheet, /@keyframes scoreboard-flip\s*\{/);
+  assert.doesNotMatch(stylesheet, /backdrop-filter:\s*blur\(7px\)/);
 });
 
 test("successful scans render their detected barcode region", async () => {
