@@ -23,14 +23,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "ScanFlow | Continuous Barcode Scanning & Local Export",
-    description: "Scan barcodes continuously, save them on this device, and export CSV or JSON anytime.",
+    description: "Scan barcodes continuously, organize entries by project, and export CSV or JSON from this device.",
     icons: {
       icon: "/favicon.png",
       shortcut: "/favicon.png",
     },
     openGraph: {
       title: "ScanFlow | Continuous Barcode Scanning",
-      description: "Continuous scanning, local storage, and one-click export. No login required.",
+      description: "Continuous scanning, project-based local storage, and one-click export. No login required.",
       type: "website",
       locale: "en_US",
       images: [{ url: imageUrl, width: 1731, height: 909, alt: "ScanFlow barcode scanner" }],
@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "ScanFlow | Continuous Barcode Scanning",
-      description: "Continuous scanning, local storage, and one-click export. No login required.",
+      description: "Continuous scanning, project-based local storage, and one-click export. No login required.",
       images: [imageUrl],
     },
   };

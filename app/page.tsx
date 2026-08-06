@@ -9,14 +9,18 @@ import {
   Braces,
   Camera,
   Check,
+  ChevronDown,
   Copy,
   Database,
   Download,
   FileSpreadsheet,
+  FolderOpen,
   Focus,
   Keyboard,
   Lightbulb,
   LightbulbOff,
+  Pencil,
+  Plus,
   ScanLine,
   Search,
   ShieldCheck,
@@ -31,6 +35,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "liansao.scans.v1";
 const SETTINGS_KEY = "liansao.settings.v1";
+const PROJECTS_KEY = "scanflow.projects.v1";
+const DEFAULT_PROJECT_ID = "inbox";
 const DUPLICATE_COOLDOWN_MS = 1800;
 const FRAME_INTERVAL_MS = 90;
 
@@ -100,9 +106,17 @@ type AdvancedCameraConstraint = MediaTrackConstraintSet & {
 
 type ScannerStatus = "idle" | "starting" | "scanning" | "error";
 type ScannerEngine = "native" | "zxing" | null;
+type ProjectDialogMode = "create" | "rename" | null;
+
+type ScanProject = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
 
 type ScanRecord = {
   id: string;
+  projectId: string;
   value: string;
   format: string;
   scannedAt: string;
@@ -134,6 +148,22 @@ function createId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createDefaultProject(): ScanProject {
+  return {
+    id: DEFAULT_PROJECT_ID,
+    name: "Inbox",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function safeFileName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "project";
 }
 
 function normalizeFormat(format: string) {
@@ -192,8 +222,13 @@ export default function Home() {
   const scanningRef = useRef(false);
   const recentScansRef = useRef(new Map<string, number>());
   const feedbackRef = useRef({ sound: true, vibration: true });
+  const activeProjectIdRef = useRef(DEFAULT_PROJECT_ID);
 
   const [records, setRecords] = useState<ScanRecord[]>([]);
+  const [projects, setProjects] = useState<ScanProject[]>(() => [createDefaultProject()]);
+  const [activeProjectId, setActiveProjectId] = useState(DEFAULT_PROJECT_ID);
+  const [projectDialog, setProjectDialog] = useState<ProjectDialogMode>(null);
+  const [projectName, setProjectName] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [status, setStatus] = useState<ScannerStatus>("idle");
   const [cameraError, setCameraError] = useState("");
@@ -216,21 +251,71 @@ export default function Home() {
 
   useEffect(() => {
     try {
+      let nextProjects = [createDefaultProject()];
+      const storedProjects = window.localStorage.getItem(PROJECTS_KEY);
+      if (storedProjects) {
+        const parsedProjects = JSON.parse(storedProjects) as ScanProject[];
+        const validProjects = Array.isArray(parsedProjects)
+          ? parsedProjects.filter(
+              (project) =>
+                project &&
+                typeof project.id === "string" &&
+                typeof project.name === "string" &&
+                project.name.trim(),
+            )
+          : [];
+        if (validProjects.length) nextProjects = validProjects;
+      }
+      // Browser storage is intentionally hydrated after mount to keep the server render stable.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProjects(nextProjects);
+
+      const validProjectIds = new Set(nextProjects.map((project) => project.id));
+      const fallbackProjectId = nextProjects[0].id;
       const storedRecords = window.localStorage.getItem(STORAGE_KEY);
       if (storedRecords) {
-        const parsed = JSON.parse(storedRecords) as ScanRecord[];
-        if (Array.isArray(parsed)) setRecords(parsed);
+        const parsed = JSON.parse(storedRecords) as Array<Partial<ScanRecord>>;
+        if (Array.isArray(parsed)) {
+          const migratedRecords = parsed
+            .filter(
+              (record) =>
+                record &&
+                typeof record.id === "string" &&
+                typeof record.value === "string" &&
+                typeof record.format === "string" &&
+                typeof record.scannedAt === "string" &&
+                (record.source === "camera" || record.source === "manual"),
+            )
+            .map((record) => ({
+              ...record,
+              projectId:
+                typeof record.projectId === "string" && validProjectIds.has(record.projectId)
+                  ? record.projectId
+                  : fallbackProjectId,
+            })) as ScanRecord[];
+          setRecords(migratedRecords);
+        }
       }
 
+      let nextActiveProjectId = fallbackProjectId;
       const storedSettings = window.localStorage.getItem(SETTINGS_KEY);
       if (storedSettings) {
         const parsed = JSON.parse(storedSettings) as {
           sound?: boolean;
           vibration?: boolean;
+          activeProjectId?: string;
         };
         setSoundOn(parsed.sound ?? true);
         setVibrationOn(parsed.vibration ?? true);
+        if (
+          typeof parsed.activeProjectId === "string" &&
+          validProjectIds.has(parsed.activeProjectId)
+        ) {
+          nextActiveProjectId = parsed.activeProjectId;
+        }
       }
+      activeProjectIdRef.current = nextActiveProjectId;
+      setActiveProjectId(nextActiveProjectId);
     } catch {
       setToast("Stored scans couldn’t be read. A fresh list has been created.");
     } finally {
@@ -240,19 +325,26 @@ export default function Home() {
 
   useEffect(() => {
     feedbackRef.current = { sound: soundOn, vibration: vibrationOn };
+    activeProjectIdRef.current = activeProjectId;
     if (hydrated) {
       window.localStorage.setItem(
         SETTINGS_KEY,
-        JSON.stringify({ sound: soundOn, vibration: vibrationOn }),
+        JSON.stringify({ sound: soundOn, vibration: vibrationOn, activeProjectId }),
       );
     }
-  }, [soundOn, vibrationOn, hydrated]);
+  }, [soundOn, vibrationOn, activeProjectId, hydrated]);
 
   useEffect(() => {
     if (hydrated) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
     }
   }, [records, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) {
+      window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+    }
+  }, [projects, hydrated]);
 
   useEffect(() => {
     if (!toast) return;
@@ -298,6 +390,7 @@ export default function Home() {
 
       const record: ScanRecord = {
         id: createId(),
+        projectId: activeProjectIdRef.current,
         value: trimmedValue,
         format,
         scannedAt: new Date().toISOString(),
@@ -582,6 +675,99 @@ export default function Home() {
     }
   };
 
+  const activeProject = useMemo(
+    () => projects.find((project) => project.id === activeProjectId) ?? projects[0],
+    [activeProjectId, projects],
+  );
+
+  const projectEntryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const record of records) {
+      counts.set(record.projectId, (counts.get(record.projectId) ?? 0) + 1);
+    }
+    return counts;
+  }, [records]);
+
+  const activeRecords = useMemo(
+    () => records.filter((record) => record.projectId === activeProject?.id),
+    [activeProject?.id, records],
+  );
+
+  const switchProject = (projectId: string) => {
+    if (!projects.some((project) => project.id === projectId)) return;
+    activeProjectIdRef.current = projectId;
+    setActiveProjectId(projectId);
+    setQuery("");
+    setLastScan(null);
+  };
+
+  const openProjectDialog = (mode: Exclude<ProjectDialogMode, null>) => {
+    setProjectName(mode === "rename" ? activeProject?.name ?? "" : "");
+    setProjectDialog(mode);
+  };
+
+  const saveProject = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = projectName.trim();
+    if (!name) return;
+
+    const duplicate = projects.some(
+      (project) =>
+        project.name.toLocaleLowerCase("en-US") === name.toLocaleLowerCase("en-US") &&
+        (projectDialog === "create" || project.id !== activeProject?.id),
+    );
+    if (duplicate) {
+      setToast("A project with that name already exists.");
+      return;
+    }
+
+    if (projectDialog === "create") {
+      const project: ScanProject = {
+        id: createId(),
+        name,
+        createdAt: new Date().toISOString(),
+      };
+      setProjects((current) => [...current, project]);
+      activeProjectIdRef.current = project.id;
+      setActiveProjectId(project.id);
+      setQuery("");
+      setLastScan(null);
+      setToast(`Project “${name}” created.`);
+    } else if (projectDialog === "rename" && activeProject) {
+      setProjects((current) =>
+        current.map((project) =>
+          project.id === activeProject.id ? { ...project, name } : project,
+        ),
+      );
+      setToast("Project renamed.");
+    }
+
+    setProjectDialog(null);
+    setProjectName("");
+  };
+
+  const deleteActiveProject = () => {
+    if (!activeProject || projects.length === 1) return;
+    const entryCount = activeRecords.length;
+    if (
+      !window.confirm(
+        `Delete “${activeProject.name}” and its ${entryCount} ${entryCount === 1 ? "entry" : "entries"}? This can’t be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    const nextProject = projects.find((project) => project.id !== activeProject.id);
+    if (!nextProject) return;
+    setProjects((current) => current.filter((project) => project.id !== activeProject.id));
+    setRecords((current) => current.filter((record) => record.projectId !== activeProject.id));
+    activeProjectIdRef.current = nextProject.id;
+    setActiveProjectId(nextProject.id);
+    setQuery("");
+    setLastScan(null);
+    setToast("Project deleted.");
+  };
+
   const submitManual = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!manualValue.trim()) return;
@@ -591,30 +777,24 @@ export default function Home() {
 
   const filteredRecords = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("en-US");
-    if (!normalizedQuery) return records;
-    return records.filter(
+    if (!normalizedQuery) return activeRecords;
+    return activeRecords.filter(
       (record) =>
         record.value.toLocaleLowerCase("en-US").includes(normalizedQuery) ||
         normalizeFormat(record.format)
           .toLocaleLowerCase("en-US")
           .includes(normalizedQuery),
     );
-  }, [query, records]);
-
-  const todayCount = useMemo(() => {
-    const today = new Date().toDateString();
-    return records.filter(
-      (record) => new Date(record.scannedAt).toDateString() === today,
-    ).length;
-  }, [records]);
+  }, [activeRecords, query]);
 
   const uniqueCount = useMemo(
-    () => new Set(records.map((record) => record.value)).size,
-    [records],
+    () => new Set(activeRecords.map((record) => record.value)).size,
+    [activeRecords],
   );
 
   const exportCsv = () => {
-    const rows = [...records].reverse().map((record, index) =>
+    if (!activeProject) return;
+    const rows = [...activeRecords].reverse().map((record, index) =>
       [
         String(index + 1),
         record.value,
@@ -631,18 +811,27 @@ export default function Home() {
     downloadBlob(
       `\uFEFF${[header, ...rows].join("\r\n")}`,
       "text/csv;charset=utf-8",
-      `scanflow-${new Date().toISOString().slice(0, 10)}.csv`,
+      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.csv`,
     );
-    setToast(`Exported ${records.length} scans as CSV.`);
+    setToast(`Exported ${activeRecords.length} entries from “${activeProject.name}”.`);
   };
 
   const exportJson = () => {
+    if (!activeProject) return;
     downloadBlob(
-      JSON.stringify([...records].reverse(), null, 2),
+      JSON.stringify(
+        {
+          project: activeProject,
+          exportedAt: new Date().toISOString(),
+          entries: [...activeRecords].reverse(),
+        },
+        null,
+        2,
+      ),
       "application/json;charset=utf-8",
-      `scanflow-${new Date().toISOString().slice(0, 10)}.json`,
+      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.json`,
     );
-    setToast(`Exported ${records.length} scans as JSON.`);
+    setToast(`Exported ${activeRecords.length} entries from “${activeProject.name}”.`);
   };
 
   const copyValue = async (record: ScanRecord) => {
@@ -656,10 +845,16 @@ export default function Home() {
   };
 
   const clearRecords = () => {
-    if (!records.length) return;
-    if (window.confirm(`Clear all ${records.length} scans? This can’t be undone.`)) {
-      setRecords([]);
-      setToast("Scan history cleared.");
+    if (!activeProject || !activeRecords.length) return;
+    if (
+      window.confirm(
+        `Clear all ${activeRecords.length} entries in “${activeProject.name}”? This can’t be undone.`,
+      )
+    ) {
+      setRecords((current) =>
+        current.filter((record) => record.projectId !== activeProject.id),
+      );
+      setToast("Project entries cleared.");
     }
   };
 
@@ -674,7 +869,7 @@ export default function Home() {
       }[status];
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" id="top">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="ScanFlow home">
           <span className="brand-mark" aria-hidden="true">
@@ -691,18 +886,57 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="intro" id="top">
-        <div>
-          <p className="eyebrow">Continuous barcode capture</p>
-          <h1>Scan one. <span>Then the next.</span></h1>
-          <p className="intro-copy">
-            Every scan saves automatically, and the camera stays ready for the next. No login, no uploads.
-          </p>
+      <section className="project-bar" aria-label="Project controls">
+        <div className="project-switcher">
+          <span className="project-label">Active project</span>
+          <label className="project-select">
+            <FolderOpen size={17} />
+            <span className="sr-only">Active project</span>
+            <select
+              value={activeProjectId}
+              onChange={(event) => switchProject(event.target.value)}
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name} · {projectEntryCounts.get(project.id) ?? 0}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
+          </label>
         </div>
-        <div className="stats" aria-label="Scan statistics">
-          <div><strong>{records.length}</strong><span>All scans</span></div>
-          <div><strong>{todayCount}</strong><span>Today</span></div>
-          <div><strong>{uniqueCount}</strong><span>Unique codes</span></div>
+        <div className="project-summary" aria-label="Project statistics">
+          <span><strong>{activeRecords.length}</strong> entries</span>
+          <span><strong>{uniqueCount}</strong> unique</span>
+        </div>
+        <div className="project-actions">
+          <button
+            className="project-create"
+            type="button"
+            onClick={() => openProjectDialog("create")}
+          >
+            <Plus size={16} />
+            <span>New project</span>
+          </button>
+          <button
+            className="project-icon-action"
+            type="button"
+            onClick={() => openProjectDialog("rename")}
+            aria-label="Rename project"
+            title="Rename project"
+          >
+            <Pencil size={15} />
+          </button>
+          <button
+            className="project-icon-action danger"
+            type="button"
+            onClick={deleteActiveProject}
+            disabled={projects.length === 1}
+            aria-label="Delete project"
+            title={projects.length === 1 ? "Create another project before deleting this one" : "Delete project"}
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       </section>
 
@@ -710,7 +944,7 @@ export default function Home() {
         <div className="scanner-panel">
           <div className="panel-heading scanner-heading">
             <div>
-              <p className="panel-kicker">01 / SCAN</p>
+              <p className="panel-kicker">01 / CAPTURE</p>
               <h2>Viewfinder</h2>
             </div>
             <span className={`status-pill status-${status}`}>
@@ -845,14 +1079,14 @@ export default function Home() {
         <div className="records-panel">
           <div className="panel-heading records-heading">
             <div>
-              <p className="panel-kicker">02 / HISTORY</p>
-              <h2>Scan log <span>{records.length}</span></h2>
+              <p className="panel-kicker">02 / ENTRIES</p>
+              <h2>Entries <span>{activeRecords.length}</span></h2>
             </div>
             <button
               className="clear-button"
               type="button"
               onClick={clearRecords}
-              disabled={!records.length}
+              disabled={!activeRecords.length}
             >
               <Trash2 size={15} /> Clear all
             </button>
@@ -875,10 +1109,10 @@ export default function Home() {
               )}
             </label>
             <div className="export-actions">
-              <button type="button" onClick={exportCsv} disabled={!records.length}>
+              <button type="button" onClick={exportCsv} disabled={!activeRecords.length}>
                 <FileSpreadsheet size={16} /> CSV
               </button>
-              <button type="button" onClick={exportJson} disabled={!records.length}>
+              <button type="button" onClick={exportJson} disabled={!activeRecords.length}>
                 <Braces size={16} /> JSON
               </button>
             </div>
@@ -925,23 +1159,80 @@ export default function Home() {
             ) : (
               <div className="empty-state">
                 <span className="empty-icon"><ScanLine size={27} /></span>
-                <h3>{query ? "No matching scans" : "Your first scan will appear here"}</h3>
-                <p>{query ? "Try another search." : "Start the camera or use manual entry on the left."}</p>
+                <h3>{query ? "No matching entries" : "Your first entry will appear here"}</h3>
+                <p>{query ? "Try another search." : "Scan a barcode or add one manually to this project."}</p>
               </div>
             )}
           </div>
 
           <div className="export-note">
             <Download size={16} />
-            <p><strong>Export your data anytime</strong><span>CSV opens in Excel. JSON is ready for system import.</span></p>
+            <p><strong>Export this project anytime</strong><span>CSV opens in Excel. JSON includes the project and its entries.</span></p>
           </div>
         </div>
       </section>
 
       <footer>
-        <p><ShieldCheck size={15} /> Privacy first: camera frames and scan history never leave this device.</p>
+        <p><ShieldCheck size={15} /> Privacy first: camera frames, projects, and entries never leave this device.</p>
         <span>ScanFlow · Local-first barcode capture</span>
       </footer>
+
+      {projectDialog && (
+        <div
+          className="dialog-backdrop"
+          role="presentation"
+        >
+          <form
+            className="project-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-dialog-title"
+            onSubmit={saveProject}
+          >
+            <div className="dialog-heading">
+              <div>
+                <p className="panel-kicker">Project</p>
+                <h2 id="project-dialog-title">
+                  {projectDialog === "create" ? "New project" : "Rename project"}
+                </h2>
+              </div>
+              <button
+                className="dialog-close"
+                type="button"
+                onClick={() => {
+                  setProjectDialog(null);
+                  setProjectName("");
+                }}
+                aria-label="Close dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <label htmlFor="project-name">Project name</label>
+            <input
+              id="project-name"
+              value={projectName}
+              onChange={(event) => setProjectName(event.target.value)}
+              placeholder="e.g. August stocktake"
+              maxLength={60}
+            />
+            <div className="dialog-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectDialog(null);
+                  setProjectName("");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="dialog-primary" type="submit" disabled={!projectName.trim()}>
+                {projectDialog === "create" ? "Create project" : "Save name"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>

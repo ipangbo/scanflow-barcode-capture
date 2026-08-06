@@ -20,8 +20,9 @@ test("server-renders the barcode capture workspace", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>ScanFlow \| Continuous Barcode Scanning &amp; Local Export<\/title>/i);
-  assert.match(html, /Continuous barcode capture/);
+  assert.match(html, /Active project/);
+  assert.match(html, /Inbox/);
   assert.match(html, /Start continuous scan/);
-  assert.match(html, /Scan log/);
+  assert.match(html, /Entries/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
