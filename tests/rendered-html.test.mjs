@@ -86,3 +86,13 @@ test("repeat barcodes increment one aggregated entry", async () => {
   assert.match(pageSource, /"Scan Count"/);
   assert.match(pageSource, /record\.scanCount === 1 \? "scan" : "scans"/);
 });
+
+test("TXT export contains only one barcode value per line", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /const exportTxt = \(\) =>/);
+  assert.match(pageSource, /record\.value\.replace\(\/\[\\r\\n\]\+\/g, ""\)/);
+  assert.match(pageSource, /values\.join\("\\r\\n"\)/);
+  assert.match(pageSource, /text\/plain;charset=utf-8/);
+  assert.match(pageSource, /<FileText size=\{16\} \/> TXT/);
+});

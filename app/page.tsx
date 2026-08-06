@@ -14,6 +14,7 @@ import {
   Database,
   Download,
   FileSpreadsheet,
+  FileText,
   FolderOpen,
   Focus,
   GraduationCap,
@@ -1119,6 +1120,19 @@ export default function Home() {
     setToast(`Exported ${activeRecords.length} entries from “${activeProject.name}”.`);
   };
 
+  const exportTxt = () => {
+    if (!activeProject) return;
+    const values = [...activeRecords]
+      .reverse()
+      .map((record) => record.value.replace(/[\r\n]+/g, ""));
+    downloadBlob(
+      values.join("\r\n"),
+      "text/plain;charset=utf-8",
+      `scanflow-${safeFileName(activeProject.name)}-${new Date().toISOString().slice(0, 10)}.txt`,
+    );
+    setToast(`Exported ${activeRecords.length} barcode values as TXT.`);
+  };
+
   const copyValue = async (record: ScanRecord) => {
     try {
       await navigator.clipboard.writeText(record.value);
@@ -1436,6 +1450,9 @@ export default function Home() {
               )}
             </label>
             <div className="export-actions">
+              <button type="button" onClick={exportTxt} disabled={!activeRecords.length}>
+                <FileText size={16} /> TXT
+              </button>
               <button type="button" onClick={exportCsv} disabled={!activeRecords.length}>
                 <FileSpreadsheet size={16} /> CSV
               </button>
@@ -1503,7 +1520,7 @@ export default function Home() {
 
           <div className="export-note">
             <Download size={16} />
-            <p><strong>Export this project anytime</strong><span>CSV opens in Excel. JSON includes the project and its entries.</span></p>
+            <p><strong>Export this project anytime</strong><span>TXT contains one barcode per line. CSV and JSON include entry details.</span></p>
           </div>
         </div>
       </section>

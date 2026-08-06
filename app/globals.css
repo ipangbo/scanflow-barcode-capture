@@ -490,7 +490,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .quality-controls { align-items: flex-start; flex-direction: column; }
   .quality-controls label { width: 100%; }
   .record-tools { grid-template-columns: 1fr; }
-  .export-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .export-actions { display: grid; grid-template-columns: repeat(3, 1fr); }
   .export-actions button { height: 38px; justify-content: center; }
   .records-list, .empty-state { min-height: 320px; }
   footer { align-items: flex-start; flex-direction: column; padding-top: 16px; }
