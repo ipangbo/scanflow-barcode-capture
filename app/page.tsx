@@ -21,6 +21,7 @@ import {
   LightbulbOff,
   Pencil,
   Plus,
+  Repeat2,
   ScanLine,
   Search,
   ShieldCheck,
@@ -164,6 +165,12 @@ function safeFileName(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "project";
+}
+
+function formatOrdinal(value: number) {
+  const remainder100 = value % 100;
+  if (remainder100 >= 11 && remainder100 <= 13) return `${value}th`;
+  return `${value}${value % 10 === 1 ? "st" : value % 10 === 2 ? "nd" : value % 10 === 3 ? "rd" : "th"}`;
 }
 
 function normalizeFormat(format: string) {
@@ -693,6 +700,14 @@ export default function Home() {
     [activeProject?.id, records],
   );
 
+  const lastScanCount = useMemo(() => {
+    if (!lastScan) return 0;
+    return records.filter(
+      (record) =>
+        record.projectId === lastScan.projectId && record.value === lastScan.value,
+    ).length;
+  }, [lastScan, records]);
+
   const switchProject = (projectId: string) => {
     if (!projects.some((project) => project.id === projectId)) return;
     activeProjectIdRef.current = projectId;
@@ -975,9 +990,20 @@ export default function Home() {
               {status === "scanning" && <b />}
             </div>
             {lastScan && (
-              <div className="capture-confirmation" role="status">
-                <Check size={18} strokeWidth={3} />
-                <span>Saved</span>
+              <div
+                className={`capture-confirmation ${lastScanCount > 1 ? "is-repeat" : ""}`}
+                role="status"
+              >
+                {lastScanCount > 1 ? (
+                  <Repeat2 size={18} strokeWidth={3} />
+                ) : (
+                  <Check size={18} strokeWidth={3} />
+                )}
+                <span>
+                  {lastScanCount > 1
+                    ? `Scanned again · ${formatOrdinal(lastScanCount)} time`
+                    : "Saved"}
+                </span>
                 <strong>{lastScan.value}</strong>
               </div>
             )}

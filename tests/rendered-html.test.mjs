@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -25,4 +26,15 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Entries/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
+});
+
+test("repeat scans use a distinct confirmation treatment", async () => {
+  const [pageSource, stylesheet] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(pageSource, /Scanned again/);
+  assert.match(pageSource, /formatOrdinal\(lastScanCount\)/);
+  assert.match(stylesheet, /\.capture-confirmation\.is-repeat\s*\{[^}]*var\(--coral\)/s);
 });
