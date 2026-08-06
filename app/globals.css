@@ -99,18 +99,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .brand-mark i:nth-child(3) { width: 2px; height: 19px; }
 .brand-mark i:nth-child(4) { height: 14px; }
 
-.local-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 12px;
-  border: 1px solid rgba(23, 25, 22, 0.16);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 650;
-  background: rgba(251, 250, 245, 0.72);
-}
-
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .settings-trigger { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 11px; border: 1px solid rgba(23, 25, 22, 0.16); border-radius: 999px; background: var(--ink); color: var(--surface); cursor: pointer; font-size: 12px; font-weight: 700; transition: transform 140ms ease, background 140ms ease; }
 .settings-trigger:hover { background: #30332d; transform: translateY(-1px); }
@@ -483,9 +471,8 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 @media (max-width: 720px) {
   .app-shell { padding: 0 10px 14px; }
   .topbar { height: 58px; }
-  .local-badge { padding: 7px 9px; font-size: 11px; }
-  .local-badge span, .settings-trigger span { display: none; }
-  .local-badge, .settings-trigger { justify-content: center; width: 34px; padding: 0; }
+  .settings-trigger span { display: none; }
+  .settings-trigger { justify-content: center; width: 34px; padding: 0; }
   .project-bar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 9px 0 11px; }
   .project-switcher { gap: 0; }
   .project-label { display: none; }

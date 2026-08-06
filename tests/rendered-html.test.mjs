@@ -23,9 +23,10 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /<title>ScanFlow \| Continuous Barcode Scanning &amp; Local Export<\/title>/i);
   assert.match(html, /Active project/);
   assert.match(html, /Inbox/);
-  assert.match(html, /Universal/);
+  assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Entries/);
+  assert.doesNotMatch(html, /Device only/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
 
@@ -65,4 +66,12 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(pageSource, /example: "5901234123457"/);
   assert.match(pageSource, /example: "https:\/\/example\.edu"/);
   assert.match(pageSource, /createHighAccuracyReader\(enabledFormatIds\)/);
+});
+
+test("iPhone Safari receives a native switch haptic fallback", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /input\.setAttribute\("switch", ""\)/);
+  assert.match(pageSource, /if \(!vibrated\) triggerIOSSwitchHaptic\(\)/);
+  assert.match(pageSource, /useState<ScannerMode>\("university"\)/);
 });

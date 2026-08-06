@@ -238,6 +238,27 @@ function createHighAccuracyReader(formatIds: BarcodeFormatId[]) {
   });
 }
 
+function triggerIOSSwitchHaptic() {
+  const id = `scanflow-haptic-${createId()}`;
+  const input = document.createElement("input");
+  const label = document.createElement("label");
+  input.type = "checkbox";
+  input.id = id;
+  input.setAttribute("switch", "");
+  input.setAttribute("aria-hidden", "true");
+  input.tabIndex = -1;
+  input.style.cssText = "position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;pointer-events:none";
+  label.htmlFor = id;
+  label.setAttribute("aria-hidden", "true");
+  label.style.cssText = "position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;pointer-events:none";
+  document.body.append(input, label);
+  label.click();
+  window.setTimeout(() => {
+    label.remove();
+    input.remove();
+  }, 80);
+}
+
 function downloadBlob(content: string, type: string, filename: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -288,11 +309,12 @@ export default function Home() {
   const [projectDialog, setProjectDialog] = useState<ProjectDialogMode>(null);
   const [projectName, setProjectName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [scanMode, setScanMode] = useState<ScannerMode>("universal");
+  const [scanMode, setScanMode] = useState<ScannerMode>("university");
+  const [scanModeConfigured, setScanModeConfigured] = useState(false);
   const [customFormats, setCustomFormats] = useState<BarcodeFormatId[]>(() => [
     ...ALL_FORMAT_IDS,
   ]);
-  const [draftScanMode, setDraftScanMode] = useState<ScannerMode>("universal");
+  const [draftScanMode, setDraftScanMode] = useState<ScannerMode>("university");
   const [draftCustomFormats, setDraftCustomFormats] = useState<BarcodeFormatId[]>(() => [
     ...ALL_FORMAT_IDS,
   ]);
@@ -373,17 +395,24 @@ export default function Home() {
           vibration?: boolean;
           activeProjectId?: string;
           scanMode?: ScannerMode;
+          scanModeConfigured?: boolean;
           customFormats?: string[];
         };
         setSoundOn(parsed.sound ?? true);
         setVibrationOn(parsed.vibration ?? true);
-        if (
+        const hasExplicitScanMode =
+          parsed.scanModeConfigured === true ||
           parsed.scanMode === "university" ||
-          parsed.scanMode === "universal" ||
-          parsed.scanMode === "custom"
+          parsed.scanMode === "custom";
+        if (
+          hasExplicitScanMode &&
+          (parsed.scanMode === "university" ||
+            parsed.scanMode === "universal" ||
+            parsed.scanMode === "custom")
         ) {
           setScanMode(parsed.scanMode);
         }
+        setScanModeConfigured(hasExplicitScanMode);
         if (Array.isArray(parsed.customFormats)) {
           const validCustomFormats = parsed.customFormats.filter(
             (format): format is BarcodeFormatId =>
@@ -418,11 +447,20 @@ export default function Home() {
           vibration: vibrationOn,
           activeProjectId,
           scanMode,
+          scanModeConfigured,
           customFormats,
         }),
       );
     }
-  }, [soundOn, vibrationOn, activeProjectId, scanMode, customFormats, hydrated]);
+  }, [
+    soundOn,
+    vibrationOn,
+    activeProjectId,
+    scanMode,
+    scanModeConfigured,
+    customFormats,
+    hydrated,
+  ]);
 
   useEffect(() => {
     if (hydrated) {
@@ -443,8 +481,12 @@ export default function Home() {
   }, [toast]);
 
   const playFeedback = useCallback(() => {
-    if (feedbackRef.current.vibration && "vibrate" in navigator) {
-      navigator.vibrate(55);
+    if (feedbackRef.current.vibration) {
+      let vibrated = false;
+      if ("vibrate" in navigator) {
+        vibrated = navigator.vibrate(55);
+      }
+      if (!vibrated) triggerIOSSwitchHaptic();
     }
 
     if (feedbackRef.current.sound) {
@@ -561,6 +603,7 @@ export default function Home() {
     const wasScanning = scanningRef.current;
     if (wasScanning) stopScanner();
     setScanMode(draftScanMode);
+    setScanModeConfigured(true);
     setCustomFormats([...draftCustomFormats]);
     setSettingsOpen(false);
     setToast(
@@ -1098,10 +1141,6 @@ export default function Home() {
             <Settings size={16} />
             <span>{scannerModeLabel}</span>
           </button>
-          <div className="local-badge">
-            <ShieldCheck size={15} strokeWidth={2.2} />
-            <span>Device only</span>
-          </div>
         </div>
       </header>
 
