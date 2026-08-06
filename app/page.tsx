@@ -1584,10 +1584,6 @@ export default function Home() {
             )}
           </div>
 
-          <div className="export-note">
-            <Download size={16} />
-            <p><strong>Download or email this project</strong><span>Choose TXT, CSV, or JSON from the export page.</span></p>
-          </div>
         </div>
       </section>
 

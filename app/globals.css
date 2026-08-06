@@ -373,13 +373,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .empty-state h3 { margin: 0; color: #4d5149; font-size: 14px; }
 .empty-state p { max-width: 280px; margin: 7px 0 0; font-size: 12px; line-height: 1.6; }
 
-.export-note { display: flex; align-items: center; gap: 12px; margin-top: auto; padding: 14px 15px; border: 1px solid #dfe8c6; border-radius: 11px; background: #f2f6e8; color: #576038; }
-.export-note > svg { flex: 0 0 auto; }
-.export-note p { margin: 0; }
-.export-note strong, .export-note span { display: block; }
-.export-note strong { font-size: 12px; }
-.export-note span { margin-top: 3px; color: #7a8163; font-size: 10px; }
-
 footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 2px 0; color: #777b72; font-size: 11px; }
 footer p { display: flex; align-items: center; gap: 6px; margin: 0; }
 footer span { font-family: var(--font-geist-mono), monospace; }

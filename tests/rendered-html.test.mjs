@@ -32,6 +32,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.ok(buildNumber, "build number should be readable");
   assert.match(html, new RegExp(`Build\\s*(?:<!-- -->)?${buildNumber}`));
   assert.doesNotMatch(html, /Device only/);
+  assert.doesNotMatch(html, /Download or email this project/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
 
