@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   FolderOpen,
   Focus,
+  GraduationCap,
   Keyboard,
   Lightbulb,
   LightbulbOff,
@@ -23,8 +24,11 @@ import {
   Plus,
   Repeat2,
   ScanLine,
+  ScanSearch,
   Search,
+  Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   Volume2,
   VolumeX,
@@ -41,34 +45,49 @@ const DEFAULT_PROJECT_ID = "inbox";
 const DUPLICATE_COOLDOWN_MS = 1800;
 const FRAME_INTERVAL_MS = 90;
 
-const ZXING_FORMATS = [
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.CODE_93,
-  BarcodeFormat.ITF,
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.DATA_MATRIX,
+type BarcodeFormatId =
+  | "code_128"
+  | "ean_13"
+  | "ean_8"
+  | "upc_a"
+  | "upc_e"
+  | "code_39"
+  | "code_93"
+  | "itf"
+  | "qr_code"
+  | "data_matrix"
+  | "pdf417"
+  | "aztec"
+  | "codabar";
+type ScannerMode = "university" | "universal" | "custom";
+
+type BarcodeDefinition = {
+  id: BarcodeFormatId;
+  name: string;
+  kind: "1D" | "2D";
+  example: string;
+  nativeFormat: string;
+  zxingFormat: BarcodeFormat;
+};
+
+const BARCODE_FORMATS: BarcodeDefinition[] = [
+  { id: "code_128", name: "Code 128", kind: "1D", example: "U12345678", nativeFormat: "code_128", zxingFormat: BarcodeFormat.CODE_128 },
+  { id: "ean_13", name: "EAN-13", kind: "1D", example: "5901234123457", nativeFormat: "ean_13", zxingFormat: BarcodeFormat.EAN_13 },
+  { id: "ean_8", name: "EAN-8", kind: "1D", example: "96385074", nativeFormat: "ean_8", zxingFormat: BarcodeFormat.EAN_8 },
+  { id: "upc_a", name: "UPC-A", kind: "1D", example: "036000291452", nativeFormat: "upc_a", zxingFormat: BarcodeFormat.UPC_A },
+  { id: "upc_e", name: "UPC-E", kind: "1D", example: "01234565", nativeFormat: "upc_e", zxingFormat: BarcodeFormat.UPC_E },
+  { id: "code_39", name: "Code 39", kind: "1D", example: "STUDENT-2048", nativeFormat: "code_39", zxingFormat: BarcodeFormat.CODE_39 },
+  { id: "code_93", name: "Code 93", kind: "1D", example: "CAMPUS93", nativeFormat: "code_93", zxingFormat: BarcodeFormat.CODE_93 },
+  { id: "itf", name: "ITF", kind: "1D", example: "12345678901231", nativeFormat: "itf", zxingFormat: BarcodeFormat.ITF },
+  { id: "codabar", name: "Codabar", kind: "1D", example: "A123456789B", nativeFormat: "codabar", zxingFormat: BarcodeFormat.CODABAR },
+  { id: "qr_code", name: "QR Code", kind: "2D", example: "https://example.edu", nativeFormat: "qr_code", zxingFormat: BarcodeFormat.QR_CODE },
+  { id: "data_matrix", name: "Data Matrix", kind: "2D", example: "ID:U12345678", nativeFormat: "data_matrix", zxingFormat: BarcodeFormat.DATA_MATRIX },
+  { id: "pdf417", name: "PDF417", kind: "2D", example: "STUDENT|U12345678", nativeFormat: "pdf417", zxingFormat: BarcodeFormat.PDF_417 },
+  { id: "aztec", name: "Aztec", kind: "2D", example: "CAMPUS-PASS-2048", nativeFormat: "aztec", zxingFormat: BarcodeFormat.AZTEC },
 ];
 
-const NATIVE_FORMATS = [
-  "ean_13",
-  "ean_8",
-  "upc_a",
-  "upc_e",
-  "code_128",
-  "code_39",
-  "code_93",
-  "itf",
-  "qr_code",
-  "data_matrix",
-  "pdf417",
-  "aztec",
-  "codabar",
-] as const;
+const ALL_FORMAT_IDS = BARCODE_FORMATS.map((format) => format.id);
+const UNIVERSITY_FORMAT_IDS: BarcodeFormatId[] = ["code_128"];
 
 const nativeFormatNames: Record<string, string> = {
   ean_13: "EAN_13",
@@ -191,9 +210,26 @@ function normalizeFormat(format: string) {
   return formatNames[format] ?? format.replaceAll("_", " ");
 }
 
-function createHighAccuracyReader() {
+function getEnabledFormatIds(mode: ScannerMode, customFormats: BarcodeFormatId[]) {
+  if (mode === "university") return UNIVERSITY_FORMAT_IDS;
+  if (mode === "universal") return ALL_FORMAT_IDS;
+  return customFormats.length ? customFormats : UNIVERSITY_FORMAT_IDS;
+}
+
+function getScannerModeLabel(mode: ScannerMode, customCount: number) {
+  if (mode === "university") return "University ID";
+  if (mode === "custom") return `Custom · ${customCount}`;
+  return "Universal";
+}
+
+function createHighAccuracyReader(formatIds: BarcodeFormatId[]) {
   const hints = new Map<DecodeHintType, unknown>();
-  hints.set(DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS);
+  hints.set(
+    DecodeHintType.POSSIBLE_FORMATS,
+    BARCODE_FORMATS.filter((format) => formatIds.includes(format.id)).map(
+      (format) => format.zxingFormat,
+    ),
+  );
   hints.set(DecodeHintType.TRY_HARDER, true);
   hints.set(DecodeHintType.ASSUME_GS1, true);
   return new BrowserMultiFormatReader(hints, {
@@ -251,6 +287,15 @@ export default function Home() {
   const [activeProjectId, setActiveProjectId] = useState(DEFAULT_PROJECT_ID);
   const [projectDialog, setProjectDialog] = useState<ProjectDialogMode>(null);
   const [projectName, setProjectName] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [scanMode, setScanMode] = useState<ScannerMode>("universal");
+  const [customFormats, setCustomFormats] = useState<BarcodeFormatId[]>(() => [
+    ...ALL_FORMAT_IDS,
+  ]);
+  const [draftScanMode, setDraftScanMode] = useState<ScannerMode>("universal");
+  const [draftCustomFormats, setDraftCustomFormats] = useState<BarcodeFormatId[]>(() => [
+    ...ALL_FORMAT_IDS,
+  ]);
   const [hydrated, setHydrated] = useState(false);
   const [status, setStatus] = useState<ScannerStatus>("idle");
   const [cameraError, setCameraError] = useState("");
@@ -327,9 +372,25 @@ export default function Home() {
           sound?: boolean;
           vibration?: boolean;
           activeProjectId?: string;
+          scanMode?: ScannerMode;
+          customFormats?: string[];
         };
         setSoundOn(parsed.sound ?? true);
         setVibrationOn(parsed.vibration ?? true);
+        if (
+          parsed.scanMode === "university" ||
+          parsed.scanMode === "universal" ||
+          parsed.scanMode === "custom"
+        ) {
+          setScanMode(parsed.scanMode);
+        }
+        if (Array.isArray(parsed.customFormats)) {
+          const validCustomFormats = parsed.customFormats.filter(
+            (format): format is BarcodeFormatId =>
+              ALL_FORMAT_IDS.includes(format as BarcodeFormatId),
+          );
+          if (validCustomFormats.length) setCustomFormats(validCustomFormats);
+        }
         if (
           typeof parsed.activeProjectId === "string" &&
           validProjectIds.has(parsed.activeProjectId)
@@ -352,10 +413,16 @@ export default function Home() {
     if (hydrated) {
       window.localStorage.setItem(
         SETTINGS_KEY,
-        JSON.stringify({ sound: soundOn, vibration: vibrationOn, activeProjectId }),
+        JSON.stringify({
+          sound: soundOn,
+          vibration: vibrationOn,
+          activeProjectId,
+          scanMode,
+          customFormats,
+        }),
       );
     }
-  }, [soundOn, vibrationOn, activeProjectId, hydrated]);
+  }, [soundOn, vibrationOn, activeProjectId, scanMode, customFormats, hydrated]);
 
   useEffect(() => {
     if (hydrated) {
@@ -470,6 +537,39 @@ export default function Home() {
     setStatus("idle");
   }, []);
 
+  const openScannerSettings = () => {
+    setDraftScanMode(scanMode);
+    setDraftCustomFormats([...customFormats]);
+    setSettingsOpen(true);
+  };
+
+  const toggleDraftFormat = (formatId: BarcodeFormatId) => {
+    setDraftCustomFormats((current) =>
+      current.includes(formatId)
+        ? current.filter((item) => item !== formatId)
+        : [...current, formatId],
+    );
+  };
+
+  const saveScannerSettings = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (draftScanMode === "custom" && draftCustomFormats.length === 0) {
+      setToast("Choose at least one barcode format.");
+      return;
+    }
+
+    const wasScanning = scanningRef.current;
+    if (wasScanning) stopScanner();
+    setScanMode(draftScanMode);
+    setCustomFormats([...draftCustomFormats]);
+    setSettingsOpen(false);
+    setToast(
+      wasScanning
+        ? "Scanning mode saved. Restart the scanner to apply it."
+        : "Scanning mode saved.",
+    );
+  };
+
   useEffect(
     () => () => {
       scanningRef.current = false;
@@ -484,6 +584,11 @@ export default function Home() {
 
   const startScanner = useCallback(async () => {
     if (status === "starting" || status === "scanning") return;
+
+    const enabledFormatIds = getEnabledFormatIds(scanMode, customFormats);
+    const requestedNativeFormats = BARCODE_FORMATS.filter((format) =>
+      enabledFormatIds.includes(format.id),
+    ).map((format) => format.nativeFormat);
 
     setCameraError("");
     setStatus("starting");
@@ -552,13 +657,10 @@ export default function Home() {
       if (Detector?.getSupportedFormats) {
         try {
           const supportedFormats = await Detector.getSupportedFormats();
-          const preferredFormats = NATIVE_FORMATS.filter((format) =>
+          const preferredFormats = requestedNativeFormats.filter((format) =>
             supportedFormats.includes(format),
           );
-          const coversRetailCodes =
-            preferredFormats.includes("code_128") &&
-            (preferredFormats.includes("ean_13") || preferredFormats.includes("upc_a"));
-          if (coversRetailCodes) {
+          if (preferredFormats.length) {
             detector = new Detector({ formats: [...preferredFormats] });
           }
         } catch {
@@ -567,7 +669,7 @@ export default function Home() {
       }
 
       if (!detector) {
-        reader = createHighAccuracyReader();
+        reader = createHighAccuracyReader(enabledFormatIds);
         readerRef.current = reader;
       }
 
@@ -697,7 +799,7 @@ export default function Home() {
                   nativeErrors += 1;
                   if (nativeErrors >= 2) {
                     detector = null;
-                    reader = createHighAccuracyReader();
+                    reader = createHighAccuracyReader(enabledFormatIds);
                     readerRef.current = reader;
                     setEngine("zxing");
                   }
@@ -740,7 +842,7 @@ export default function Home() {
       setCameraError(friendlyCameraError(error));
       setStatus("error");
     }
-  }, [acceptDecodedValue, status]);
+  }, [acceptDecodedValue, customFormats, scanMode, status]);
 
   const toggleTorch = async () => {
     const next = !torchOn;
@@ -970,6 +1072,9 @@ export default function Home() {
         starting: "Connecting",
         error: "Camera offline",
       }[status];
+  const enabledFormatIds = getEnabledFormatIds(scanMode, customFormats);
+  const draftEnabledFormatIds = getEnabledFormatIds(draftScanMode, draftCustomFormats);
+  const scannerModeLabel = getScannerModeLabel(scanMode, enabledFormatIds.length);
 
   return (
     <main className="app-shell" id="top">
@@ -983,9 +1088,20 @@ export default function Home() {
           </span>
           <span>ScanFlow</span>
         </a>
-        <div className="local-badge">
-          <ShieldCheck size={15} strokeWidth={2.2} />
-          Device only
+        <div className="topbar-actions">
+          <button
+            className="settings-trigger"
+            type="button"
+            onClick={openScannerSettings}
+            aria-label={`Scanner settings. Current mode: ${scannerModeLabel}`}
+          >
+            <Settings size={16} />
+            <span>{scannerModeLabel}</span>
+          </button>
+          <div className="local-badge">
+            <ShieldCheck size={15} strokeWidth={2.2} />
+            <span>Device only</span>
+          </div>
         </div>
       </header>
 
@@ -1171,8 +1287,8 @@ export default function Home() {
             <p>
               <Focus size={14} />
               {engine === "native"
-                ? "Device-native detection · focused scan zone"
-                : "High-accuracy detection · focused scan zone"}
+                ? `${scannerModeLabel} · device-native detection`
+                : `${scannerModeLabel} · high-accuracy detection`}
             </p>
             {zoomRange && status === "scanning" && (
               <label>
@@ -1359,6 +1475,128 @@ export default function Home() {
               </button>
               <button className="dialog-primary" type="submit" disabled={!projectName.trim()}>
                 {projectDialog === "create" ? "Create project" : "Save name"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="dialog-backdrop" role="presentation">
+          <form
+            className="settings-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-dialog-title"
+            onSubmit={saveScannerSettings}
+          >
+            <div className="dialog-heading settings-heading">
+              <div>
+                <p className="panel-kicker">Scanner</p>
+                <h2 id="settings-dialog-title">Scanning settings</h2>
+                <p>Choose which barcode formats the camera should look for.</p>
+              </div>
+              <button
+                className="dialog-close"
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Close settings"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <fieldset className="mode-options">
+              <legend>Scanning mode</legend>
+              <label className={draftScanMode === "university" ? "is-selected" : ""}>
+                <input
+                  type="radio"
+                  name="scan-mode"
+                  value="university"
+                  checked={draftScanMode === "university"}
+                  onChange={() => setDraftScanMode("university")}
+                />
+                <span className="mode-icon"><GraduationCap size={20} /></span>
+                <span className="mode-copy">
+                  <strong>University ID</strong>
+                  <small>Code 128 only · best for student and campus IDs</small>
+                </span>
+              </label>
+              <label className={draftScanMode === "universal" ? "is-selected" : ""}>
+                <input
+                  type="radio"
+                  name="scan-mode"
+                  value="universal"
+                  checked={draftScanMode === "universal"}
+                  onChange={() => setDraftScanMode("universal")}
+                />
+                <span className="mode-icon"><ScanSearch size={20} /></span>
+                <span className="mode-copy">
+                  <strong>Universal</strong>
+                  <small>Scan every supported 1D and 2D format</small>
+                </span>
+              </label>
+              <label className={draftScanMode === "custom" ? "is-selected" : ""}>
+                <input
+                  type="radio"
+                  name="scan-mode"
+                  value="custom"
+                  checked={draftScanMode === "custom"}
+                  onChange={() => setDraftScanMode("custom")}
+                />
+                <span className="mode-icon"><SlidersHorizontal size={20} /></span>
+                <span className="mode-copy">
+                  <strong>Custom</strong>
+                  <small>Choose exactly which formats to recognize</small>
+                </span>
+              </label>
+            </fieldset>
+
+            <fieldset className="format-settings">
+              <legend className="format-settings-heading">
+                <span>Recognized formats</span>
+                <small>{draftEnabledFormatIds.length} enabled</small>
+              </legend>
+              <p className="format-help">
+                {draftScanMode === "custom"
+                  ? "Select one or more formats. Each item includes an example value."
+                  : "Switch to Custom mode to change individual formats."}
+              </p>
+              <div className="format-grid">
+                {BARCODE_FORMATS.map((format) => {
+                  const checked = draftEnabledFormatIds.includes(format.id);
+                  return (
+                    <label
+                      className={`format-option ${checked ? "is-enabled" : ""}`}
+                      key={format.id}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={draftScanMode !== "custom"}
+                        onChange={() => toggleDraftFormat(format.id)}
+                      />
+                      <span className="format-check" aria-hidden="true">
+                        {checked && <Check size={13} strokeWidth={3} />}
+                      </span>
+                      <span className="format-copy">
+                        <span><strong>{format.name}</strong><em>{format.kind}</em></span>
+                        <code>{format.example}</code>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div className="dialog-actions settings-actions">
+              <button type="button" onClick={() => setSettingsOpen(false)}>Cancel</button>
+              <button
+                className="dialog-primary"
+                type="submit"
+                disabled={draftScanMode === "custom" && draftCustomFormats.length === 0}
+              >
+                Save settings
               </button>
             </div>
           </form>

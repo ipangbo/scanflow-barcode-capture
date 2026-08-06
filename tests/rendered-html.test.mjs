@@ -23,6 +23,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /<title>ScanFlow \| Continuous Barcode Scanning &amp; Local Export<\/title>/i);
   assert.match(html, /Active project/);
   assert.match(html, /Inbox/);
+  assert.match(html, /Universal/);
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Entries/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
@@ -51,4 +52,17 @@ test("successful scans render their detected barcode region", async () => {
   assert.match(pageSource, /result\.getResultPoints\(\)/);
   assert.match(pageSource, /className="detected-region"/);
   assert.match(stylesheet, /\.detected-region\s*\{/);
+});
+
+test("scanner modes constrain formats and include examples", async () => {
+  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(pageSource, /University ID/);
+  assert.match(pageSource, /Universal/);
+  assert.match(pageSource, /Choose exactly which formats to recognize/);
+  assert.match(pageSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
+  assert.match(pageSource, /example: "U12345678"/);
+  assert.match(pageSource, /example: "5901234123457"/);
+  assert.match(pageSource, /example: "https:\/\/example\.edu"/);
+  assert.match(pageSource, /createHighAccuracyReader\(enabledFormatIds\)/);
 });
