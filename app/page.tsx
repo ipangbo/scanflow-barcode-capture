@@ -1189,17 +1189,17 @@ export default function Home() {
     () => activeRecords.reduce((total, record) => total + record.scanCount, 0),
     [activeRecords],
   );
-  const previousScanTotal = lastScan ? Math.max(0, totalScanCount - 1) : totalScanCount;
-  const scoreboardWidth = Math.max(
+  const previousCounterTotal = lastScan ? Math.max(0, totalScanCount - 1) : totalScanCount;
+  const counterWidth = Math.max(
     2,
-    String(previousScanTotal).length,
+    String(previousCounterTotal).length,
     String(totalScanCount).length,
   );
-  const previousScoreboardDigits = String(previousScanTotal)
-    .padStart(scoreboardWidth, "0")
+  const previousCounterDigits = String(previousCounterTotal)
+    .padStart(counterWidth, "0")
     .split("");
-  const scoreboardDigits = String(totalScanCount)
-    .padStart(scoreboardWidth, "0")
+  const counterDigits = String(totalScanCount)
+    .padStart(counterWidth, "0")
     .split("");
 
   const getExportPayload = (format: ExportFormat) => {
@@ -1409,46 +1409,35 @@ export default function Home() {
               <h2>Viewfinder</h2>
             </div>
             <div
-              key={lastScan?.eventId ?? "scan-scoreboard-idle"}
-              className={`scan-scoreboard ${lastScan ? "is-flipping" : ""}`}
+              key={lastScan?.eventId ?? "scan-counter-idle"}
+              className={`scan-counter ${lastScan ? "is-counting" : ""}`}
               role="status"
               aria-live="polite"
               aria-label={`${totalScanCount} scans saved in this project`}
             >
-              <span className="scan-scoreboard-digits" aria-hidden="true">
-                {scoreboardDigits.map((digit, index) => {
-                  const previousDigit = previousScoreboardDigits[index];
+              <span className="scan-counter-digits" aria-hidden="true">
+                {counterDigits.map((digit, index) => {
+                  const previousDigit = previousCounterDigits[index];
                   const isChanging = Boolean(lastScan && previousDigit !== digit);
 
                   return (
                     <span
-                      className={`scan-scoreboard-digit ${isChanging ? "is-changing" : ""}`}
+                      className={`scan-counter-digit ${isChanging ? "is-rolling" : ""}`}
                       key={index}
                     >
-                      <span className="scoreboard-face is-top is-static">
-                        <span>{digit}</span>
-                      </span>
-                      <span className="scoreboard-face is-bottom is-static">
-                        <span>{digit}</span>
-                      </span>
-                      {isChanging && (
-                        <>
-                          <span className="scoreboard-face is-bottom is-old-bottom">
-                            <span>{previousDigit}</span>
-                          </span>
-                          <span className="scoreboard-face is-top is-old-top">
-                            <span>{previousDigit}</span>
-                          </span>
-                          <span className="scoreboard-face is-bottom is-new-bottom">
-                            <span>{digit}</span>
-                          </span>
-                        </>
+                      {isChanging ? (
+                        <span className="scan-counter-reel">
+                          <span>{previousDigit}</span>
+                          <span>{digit}</span>
+                        </span>
+                      ) : (
+                        <span className="scan-counter-value">{digit}</span>
                       )}
                     </span>
                   );
                 })}
               </span>
-              <span className="scan-scoreboard-label" aria-hidden="true">saved</span>
+              <span className="scan-counter-label" aria-hidden="true">saved</span>
             </div>
             <span className={`status-pill status-${status}`}>
               <i aria-hidden="true" />

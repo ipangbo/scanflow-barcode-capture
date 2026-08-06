@@ -57,11 +57,10 @@ test("continuous scanning has strong multi-channel feedback", async () => {
   ]);
 
   assert.match(pageSource, /className=\{`scan-flash is-\$\{scanCue\.kind\}`\}/);
-  assert.match(pageSource, /className=\{`scan-scoreboard/);
-  assert.match(pageSource, /key=\{lastScan\?\.eventId \?\? "scan-scoreboard-idle"\}/);
-  assert.match(pageSource, /const previousScanTotal = lastScan \? Math\.max\(0, totalScanCount - 1\)/);
-  assert.match(pageSource, /className="scoreboard-face is-top is-old-top"/);
-  assert.match(pageSource, /className="scoreboard-face is-bottom is-new-bottom"/);
+  assert.match(pageSource, /className=\{`scan-counter/);
+  assert.match(pageSource, /key=\{lastScan\?\.eventId \?\? "scan-counter-idle"\}/);
+  assert.match(pageSource, /const previousCounterTotal = lastScan \? Math\.max\(0, totalScanCount - 1\)/);
+  assert.match(pageSource, /className="scan-counter-reel"/);
   assert.match(pageSource, /\? "Scanning"/);
   assert.doesNotMatch(pageSource, /Scanning · Enhanced/);
   assert.match(pageSource, /Verifying…/);
@@ -71,9 +70,8 @@ test("continuous scanning has strong multi-channel feedback", async () => {
   assert.match(pageSource, /frequency: 520/);
   assert.match(stylesheet, /\.scan-flash\.is-saved\s*\{/);
   assert.match(stylesheet, /\.scan-flash\.is-repeat\s*\{/);
-  assert.match(stylesheet, /\.scan-scoreboard\.is-flipping \.scan-scoreboard-digit\.is-changing \.is-old-top\s*\{/);
-  assert.match(stylesheet, /@keyframes scoreboard-flip-top\s*\{/);
-  assert.match(stylesheet, /@keyframes scoreboard-flip-bottom\s*\{/);
+  assert.match(stylesheet, /\.scan-counter\.is-counting \.scan-counter-digit\.is-rolling \.scan-counter-reel\s*\{/);
+  assert.match(stylesheet, /@keyframes counter-roll\s*\{/);
   assert.doesNotMatch(stylesheet, /backdrop-filter:\s*blur\(7px\)/);
 });
 
