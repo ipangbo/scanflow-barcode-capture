@@ -36,5 +36,7 @@ test("repeat scans use a distinct confirmation treatment", async () => {
 
   assert.match(pageSource, /Scanned again/);
   assert.match(pageSource, /formatOrdinal\(lastScanCount\)/);
+  assert.match(pageSource, /key=\{lastScan\.id\}/);
   assert.match(stylesheet, /\.capture-confirmation\.is-repeat\s*\{[^}]*var\(--coral\)/s);
+  assert.match(stylesheet, /@keyframes capture-in\s*\{[\s\S]*68%/);
 });

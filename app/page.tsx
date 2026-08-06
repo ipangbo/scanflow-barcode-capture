@@ -991,6 +991,7 @@ export default function Home() {
             </div>
             {lastScan && (
               <div
+                key={lastScan.id}
                 className={`capture-confirmation ${lastScanCount > 1 ? "is-repeat" : ""}`}
                 role="status"
               >

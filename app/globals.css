@@ -271,11 +271,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   background: var(--lime);
   color: var(--ink);
   transform: translateX(-50%);
-  animation: capture-in 220ms ease-out;
+  will-change: opacity, transform;
+  animation: capture-in 360ms cubic-bezier(0.2, 1.15, 0.35, 1);
 }
 .capture-confirmation strong { grid-column: 1 / -1; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-geist-mono), monospace; font-size: 12px; }
 .capture-confirmation span { font-size: 12px; font-weight: 750; }
-.capture-confirmation.is-repeat { background: var(--coral); color: #241713; box-shadow: 0 9px 28px rgba(255, 115, 86, 0.35); animation: repeat-capture-in 300ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+.capture-confirmation.is-repeat { background: var(--coral); color: #241713; box-shadow: 0 9px 28px rgba(255, 115, 86, 0.35); animation: repeat-capture-in 420ms cubic-bezier(0.2, 1.2, 0.35, 1); }
 
 .camera-error { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; padding: 11px 13px; border: 1px solid rgba(255, 115, 86, 0.28); border-radius: 10px; color: #ffad9a; background: rgba(255, 115, 86, 0.07); font-size: 12px; line-height: 1.5; }
 .camera-error svg { flex: 0 0 auto; margin-top: 1px; }
@@ -401,8 +402,16 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 @keyframes scan-beam { from { top: 8%; } to { top: 91%; } }
 @keyframes status-pulse { 50% { opacity: 0.5; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes capture-in { from { opacity: 0; transform: translate(-50%, 8px) scale(0.96); } }
-@keyframes repeat-capture-in { from { opacity: 0; transform: translate(-50%, 8px) scale(0.86) rotate(-1deg); } }
+@keyframes capture-in {
+  0% { opacity: 0; transform: translate(-50%, 18px) scale(0.78); }
+  68% { opacity: 1; transform: translate(-50%, -5px) scale(1.07); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes repeat-capture-in {
+  0% { opacity: 0; transform: translate(-50%, 20px) scale(0.72) rotate(-2deg); }
+  62% { opacity: 1; transform: translate(-50%, -7px) scale(1.1) rotate(1deg); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); }
+}
 @keyframes row-in { from { opacity: 0; transform: translateY(-5px); } }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @keyframes fade-in { from { opacity: 0; } }
