@@ -212,6 +212,8 @@ mdui-button, mdui-button-icon {
   border-left: 1px solid var(--ink);
 }
 
+.mobile-navigation { display: none !important; }
+
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .panel-heading h2 { margin: 0; font-size: 24px; line-height: 1.1; letter-spacing: -0.04em; }
 .scanner-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; }
@@ -679,6 +681,10 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 }
 @keyframes row-in { from { opacity: 0; transform: translateY(-5px); } }
 @keyframes camera-mask-in { from { opacity: 0; } }
+@keyframes mobile-view-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 @media (max-width: 1040px) {
   .app-shell { padding-inline: 24px; }
@@ -691,14 +697,35 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 }
 
 @media (max-width: 720px) {
-  .app-shell { padding: 0 10px 14px; }
+  .app-shell { padding: 0 10px calc(90px + env(safe-area-inset-bottom)); }
   .topbar { height: 58px; }
   .project-bar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 9px 0 11px; }
   .project-switcher { gap: 0; }
   .project-label { display: none; }
   .project-select { width: 100%; min-width: 0; height: 40px; }
-  .workspace { min-height: calc(100vh - 118px); border-radius: 14px; }
+  .workspace { min-height: calc(100vh - 118px); border-radius: 14px; scroll-margin-top: 8px; }
   .scanner-panel, .records-panel { padding: 16px; }
+  .workspace > .mobile-view-inactive { display: none; }
+  .workspace > .mobile-view-active { animation: mobile-view-in var(--mdui-motion-duration-medium2) var(--mdui-motion-easing-emphasized-decelerate); }
+  .records-panel { border-top: 0; }
+  .mobile-navigation {
+    --shape-corner: 22px;
+    --z-index: 80;
+    --mdui-color-surface: 251, 250, 245;
+    --mdui-color-secondary-container: 226, 245, 181;
+    --mdui-color-on-secondary-container: 23, 31, 5;
+    --mdui-color-on-surface: 23, 25, 22;
+    --mdui-color-on-surface-variant: 89, 94, 84;
+    display: flex !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(23, 25, 22, 0.12);
+    box-shadow: 0 -10px 30px rgba(23, 25, 22, 0.13);
+  }
+  .mobile-navigation mdui-badge { --mdui-color-error: 23, 25, 22; --mdui-color-on-error: 201, 244, 93; }
   .camera-stage { --scan-frame-block-inset: 17%; --scan-frame-inline-inset: 9%; aspect-ratio: 4 / 3; }
   .camera-placeholder p { max-width: calc(82% - 48px); font-size: 13px; }
   .quality-controls { align-items: flex-start; flex-direction: column; }

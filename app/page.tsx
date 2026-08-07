@@ -14,6 +14,7 @@ import {
 } from "./components/entry-delete-dialog";
 import { ProjectBar } from "./components/project-bar";
 import { ProjectDialog } from "./components/project-dialog";
+import { MobileNavigation, type MobileWorkspaceView } from "./components/mobile-navigation";
 import { RecordsPanel } from "./components/records-panel";
 import { ScannerPanel } from "./components/scanner-panel";
 import { ScannerSettingsDialog } from "./components/scanner-settings-dialog";
@@ -95,6 +96,7 @@ export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [mobileWorkspaceView, setMobileWorkspaceView] = useState<MobileWorkspaceView>("scanner");
   const [entryDeletePrompt, setEntryDeletePrompt] = useState<EntryDeletePrompt | null>(null);
   const [scanMode, setScanMode] = useState<ScannerMode>("university");
   const [recognitionEngine, setRecognitionEngine] = useState<ScannerEnginePreference>("zxing");
@@ -958,8 +960,9 @@ export default function Home() {
       />
 
 
-      <section className="workspace" aria-label="Barcode capture workspace">
+      <section className="workspace" id="workspace" aria-label="Barcode capture workspace">
         <ScannerPanel
+          mobileActive={mobileWorkspaceView === "scanner"}
           videoRef={videoRef}
           frameRef={frameRef}
           status={status}
@@ -989,6 +992,7 @@ export default function Home() {
 
 
         <RecordsPanel
+          mobileActive={mobileWorkspaceView === "entries"}
           activeRecords={activeRecords}
           filteredRecords={filteredRecords}
           hydrated={hydrated}
@@ -1002,6 +1006,8 @@ export default function Home() {
         />
 
       </section>
+
+      <MobileNavigation value={mobileWorkspaceView} entryCount={activeRecords.length} onViewChange={setMobileWorkspaceView} />
 
       <footer>
         <span className="footer-meta">

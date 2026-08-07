@@ -13,6 +13,7 @@ import type { ScanRecord } from "../lib/models";
 import { ActionTooltip } from "./action-tooltip";
 
 type RecordsPanelProps = {
+  mobileActive: boolean;
   activeRecords: ScanRecord[];
   filteredRecords: ScanRecord[];
   hydrated: boolean;
@@ -26,6 +27,7 @@ type RecordsPanelProps = {
 };
 
 export function RecordsPanel({
+  mobileActive,
   activeRecords,
   filteredRecords,
   hydrated,
@@ -38,7 +40,7 @@ export function RecordsPanel({
   onDelete,
 }: RecordsPanelProps) {
   return (
-    <div className="records-panel">
+    <div className={`records-panel mobile-view-${mobileActive ? "active" : "inactive"}`}>
       <div className="panel-heading records-heading">
         <div>
           <h2>Entries <span>{activeRecords.length}</span></h2>

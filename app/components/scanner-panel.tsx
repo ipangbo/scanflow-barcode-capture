@@ -34,6 +34,7 @@ type ZoomRange = {
 };
 
 type ScannerPanelProps = {
+  mobileActive: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
   frameRef: RefObject<HTMLDivElement | null>;
   status: ScannerStatus;
@@ -62,6 +63,7 @@ type ScannerPanelProps = {
 };
 
 export function ScannerPanel({
+  mobileActive,
   videoRef,
   frameRef,
   status,
@@ -101,7 +103,7 @@ export function ScannerPanel({
     : [];
 
   return (
-    <div className="scanner-panel">
+    <div className={`scanner-panel mobile-view-${mobileActive ? "active" : "inactive"}`}>
       <div className="panel-heading scanner-heading">
         <div>
           <h2>Viewfinder</h2>

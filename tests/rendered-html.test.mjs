@@ -63,6 +63,28 @@ test("the page is split into maintainable feature modules", async () => {
   assert.ok(pageSource.split("\n").length < 1100, "page orchestration should remain focused");
 });
 
+test("mobile navigation separates scanning and entries without changing desktop columns", async () => {
+  const [pageSource, navigationSource, componentLoader, scannerSource, recordsSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/mobile-navigation.tsx"),
+    readSource("app/components/mdui-components.ts"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/components/records-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(pageSource, /mobileWorkspaceView/);
+  assert.match(navigationSource, /<mdui-navigation-bar/);
+  assert.match(navigationSource, /value="scanner"/);
+  assert.match(navigationSource, /value="entries"/);
+  assert.match(componentLoader, /components\/navigation-bar\.js/);
+  assert.match(scannerSource, /mobile-view-/);
+  assert.match(recordsSource, /mobile-view-/);
+  assert.match(stylesheet, /\.mobile-navigation \{ display: none !important; \}/);
+  assert.match(stylesheet, /@media \(max-width: 720px\)[\s\S]*\.workspace > \.mobile-view-inactive \{ display: none; \}/);
+  assert.match(stylesheet, /\.workspace \{[\s\S]*grid-template-columns: minmax\(0, 1\.04fr\) minmax\(420px, 0\.96fr\)/);
+});
+
 test("repeat scans use a distinct confirmation treatment", async () => {
   const [pageSource, scannerPanelSource, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
