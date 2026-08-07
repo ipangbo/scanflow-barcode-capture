@@ -44,12 +44,14 @@ test("server-renders the barcode capture workspace", async () => {
 });
 
 test("the page is split into maintainable feature modules", async () => {
-  const pageSource = await readSource("app/page.tsx");
-  const requiredModules = [
+  const [pageSource, secondaryUiSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/lazy-secondary-ui.ts"),
+  ]);
+  const requiredStaticModules = [
     "components/scanner-panel",
     "components/records-panel",
-    "components/scanner-settings-dialog",
-    "components/export-page",
+    "components/lazy-secondary-ui",
     "lib/barcodes",
     "lib/storage",
     "lib/exports",
@@ -57,10 +59,55 @@ test("the page is split into maintainable feature modules", async () => {
     "lib/scanner-engines",
   ];
 
-  for (const moduleName of requiredModules) {
+  for (const moduleName of requiredStaticModules) {
     assert.match(pageSource, new RegExp(`from "\\./${moduleName}"`));
   }
-  assert.ok(pageSource.split("\n").length < 1100, "page orchestration should remain focused");
+  for (const moduleName of [
+    "components/scanner-settings-dialog",
+    "components/export-page",
+    "components/project-dialog",
+    "components/entry-delete-dialog",
+  ]) {
+    assert.match(
+      secondaryUiSource,
+      new RegExp(`import\\("\\./${moduleName.replace("components/", "")}"\\)`),
+    );
+  }
+  assert.match(secondaryUiSource, /lazy\(async \(\) =>/);
+  assert.match(pageSource, /<Suspense fallback=\{null\}>/);
+  assert.ok(pageSource.split("\n").length < 1150, "page orchestration should remain focused");
+});
+
+test("heavy scanner and secondary UI code stays outside the initial page chunk", async () => {
+  const [pageSource, secondaryUiSource, componentLoader, barcodesSource, scannerEnginesSource, manifestSource] =
+    await Promise.all([
+      readSource("app/page.tsx"),
+      readSource("app/components/lazy-secondary-ui.ts"),
+      readSource("app/components/mdui-components.ts"),
+      readSource("app/lib/barcodes.ts"),
+      readSource("app/lib/scanner-engines.ts"),
+      readSource("dist/client/.vite/manifest.json"),
+    ]);
+  const manifest = JSON.parse(manifestSource);
+  const pageEntry = manifest["app/page.tsx"];
+
+  assert.doesNotMatch(barcodesSource, /@zxing\//);
+  assert.doesNotMatch(scannerEnginesSource, /from "@zxing\//);
+  assert.match(scannerEnginesSource, /import\("\.\/zxing-decoder"\)/);
+  assert.match(pageSource, /preloadExportPage/);
+  assert.match(pageSource, /preloadScannerSettingsDialog/);
+  assert.match(secondaryUiSource, /import\("\.\/export-page"\)/);
+  assert.match(secondaryUiSource, /import\("\.\/scanner-settings-dialog"\)/);
+  assert.match(componentLoader, /loadMduiCoreComponents/);
+  assert.match(componentLoader, /loadMduiDialogComponents/);
+  assert.match(componentLoader, /loadMduiSettingsComponents/);
+  assert.match(componentLoader, /loadMduiScannerComponents/);
+  assert.ok(pageEntry?.dynamicImports?.includes("app/lib/zxing-decoder.ts"));
+  assert.ok(pageEntry?.dynamicImports?.includes("app/components/export-page.tsx"));
+  assert.ok(pageEntry?.dynamicImports?.includes("app/components/scanner-settings-dialog.tsx"));
+  assert.equal(manifest["app/lib/zxing-decoder.ts"]?.isDynamicEntry, true);
+  assert.equal(manifest["app/components/export-page.tsx"]?.isDynamicEntry, true);
+  assert.equal(manifest["app/components/scanner-settings-dialog.tsx"]?.isDynamicEntry, true);
 });
 
 test("mobile navigation separates scanning and entries without changing desktop columns", async () => {
@@ -145,15 +192,16 @@ test("continuous scanning has strong multi-channel feedback", async () => {
 });
 
 test("successful scans render their detected barcode region", async () => {
-  const [pageSource, scannerPanelSource, scannerEnginesSource, stylesheet] = await Promise.all([
+  const [pageSource, scannerPanelSource, scannerEnginesSource, zxingDecoderSource, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
     readSource("app/components/scanner-panel.tsx"),
     readSource("app/lib/scanner-engines.ts"),
+    readSource("app/lib/zxing-decoder.ts"),
     readSource("app/globals.css"),
   ]);
 
   assert.match(scannerEnginesSource, /result\.cornerPoints/);
-  assert.match(scannerEnginesSource, /result\.getResultPoints\(\)/);
+  assert.match(zxingDecoderSource, /result\.getResultPoints\(\)/);
   assert.match(pageSource, /revealDetectionRegion\(result\.points\)/);
   assert.match(scannerPanelSource, /className="detected-region"/);
   assert.match(stylesheet, /\.detected-region\s*\{/);
@@ -326,11 +374,12 @@ test("camera zoom offers supported common presets and fine control", async () =>
 });
 
 test("scanner modes constrain formats and include examples", async () => {
-  const [pageSource, settingsSource, barcodesSource, scannerEnginesSource] = await Promise.all([
+  const [pageSource, settingsSource, barcodesSource, scannerEnginesSource, zxingDecoderSource] = await Promise.all([
     readSource("app/page.tsx"),
     readSource("app/components/scanner-settings-dialog.tsx"),
     readSource("app/lib/barcodes.ts"),
     readSource("app/lib/scanner-engines.ts"),
+    readSource("app/lib/zxing-decoder.ts"),
   ]);
 
   assert.match(settingsSource, /University ID/);
@@ -352,7 +401,11 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(barcodesSource, /example: "12345678"/);
   assert.match(barcodesSource, /example: "5901234123457"/);
   assert.match(barcodesSource, /example: "https:\/\/example\.edu"/);
-  assert.match(scannerEnginesSource, /createHighAccuracyReader\(formatIds\)/);
+  assert.match(scannerEnginesSource, /createZXingFrameDecoder\(formatIds\)/);
+  assert.match(zxingDecoderSource, /DecodeHintType\.POSSIBLE_FORMATS/);
+  assert.match(zxingDecoderSource, /DecodeHintType\.TRY_HARDER/);
+  assert.match(zxingDecoderSource, /DecodeHintType\.ASSUME_GS1/);
+  assert.match(zxingDecoderSource, /delayBetweenScanAttempts: FRAME_INTERVAL_MS/);
 });
 
 test("settings dialog stays within the mobile visual viewport", async () => {

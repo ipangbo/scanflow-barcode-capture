@@ -1,8 +1,3 @@
-import {
-  BarcodeFormat,
-  BrowserMultiFormatReader,
-} from "@zxing/browser";
-import { DecodeHintType } from "@zxing/library";
 import type { BarcodeFormatId, ScannerMode } from "./models";
 
 type BarcodeDefinition = {
@@ -11,7 +6,6 @@ type BarcodeDefinition = {
   kind: "1D" | "2D";
   example: string;
   nativeFormat: string;
-  zxingFormat: BarcodeFormat;
 };
 
 export const DUPLICATE_COOLDOWN_MS = 1800;
@@ -20,19 +14,19 @@ export const DECODE_CONFIRMATION_WINDOW_MS = 700;
 export const REQUIRED_DECODE_MATCHES = 2;
 
 export const BARCODE_FORMATS: BarcodeDefinition[] = [
-  { id: "code_128", name: "Code 128", kind: "1D", example: "12345678", nativeFormat: "code_128", zxingFormat: BarcodeFormat.CODE_128 },
-  { id: "ean_13", name: "EAN-13", kind: "1D", example: "5901234123457", nativeFormat: "ean_13", zxingFormat: BarcodeFormat.EAN_13 },
-  { id: "ean_8", name: "EAN-8", kind: "1D", example: "96385074", nativeFormat: "ean_8", zxingFormat: BarcodeFormat.EAN_8 },
-  { id: "upc_a", name: "UPC-A", kind: "1D", example: "036000291452", nativeFormat: "upc_a", zxingFormat: BarcodeFormat.UPC_A },
-  { id: "upc_e", name: "UPC-E", kind: "1D", example: "01234565", nativeFormat: "upc_e", zxingFormat: BarcodeFormat.UPC_E },
-  { id: "code_39", name: "Code 39", kind: "1D", example: "STUDENT-2048", nativeFormat: "code_39", zxingFormat: BarcodeFormat.CODE_39 },
-  { id: "code_93", name: "Code 93", kind: "1D", example: "CAMPUS93", nativeFormat: "code_93", zxingFormat: BarcodeFormat.CODE_93 },
-  { id: "itf", name: "ITF", kind: "1D", example: "12345678901231", nativeFormat: "itf", zxingFormat: BarcodeFormat.ITF },
-  { id: "codabar", name: "Codabar", kind: "1D", example: "A123456789B", nativeFormat: "codabar", zxingFormat: BarcodeFormat.CODABAR },
-  { id: "qr_code", name: "QR Code", kind: "2D", example: "https://example.edu", nativeFormat: "qr_code", zxingFormat: BarcodeFormat.QR_CODE },
-  { id: "data_matrix", name: "Data Matrix", kind: "2D", example: "ID:U12345678", nativeFormat: "data_matrix", zxingFormat: BarcodeFormat.DATA_MATRIX },
-  { id: "pdf417", name: "PDF417", kind: "2D", example: "STUDENT|U12345678", nativeFormat: "pdf417", zxingFormat: BarcodeFormat.PDF_417 },
-  { id: "aztec", name: "Aztec", kind: "2D", example: "CAMPUS-PASS-2048", nativeFormat: "aztec", zxingFormat: BarcodeFormat.AZTEC },
+  { id: "code_128", name: "Code 128", kind: "1D", example: "12345678", nativeFormat: "code_128" },
+  { id: "ean_13", name: "EAN-13", kind: "1D", example: "5901234123457", nativeFormat: "ean_13" },
+  { id: "ean_8", name: "EAN-8", kind: "1D", example: "96385074", nativeFormat: "ean_8" },
+  { id: "upc_a", name: "UPC-A", kind: "1D", example: "036000291452", nativeFormat: "upc_a" },
+  { id: "upc_e", name: "UPC-E", kind: "1D", example: "01234565", nativeFormat: "upc_e" },
+  { id: "code_39", name: "Code 39", kind: "1D", example: "STUDENT-2048", nativeFormat: "code_39" },
+  { id: "code_93", name: "Code 93", kind: "1D", example: "CAMPUS93", nativeFormat: "code_93" },
+  { id: "itf", name: "ITF", kind: "1D", example: "12345678901231", nativeFormat: "itf" },
+  { id: "codabar", name: "Codabar", kind: "1D", example: "A123456789B", nativeFormat: "codabar" },
+  { id: "qr_code", name: "QR Code", kind: "2D", example: "https://example.edu", nativeFormat: "qr_code" },
+  { id: "data_matrix", name: "Data Matrix", kind: "2D", example: "ID:U12345678", nativeFormat: "data_matrix" },
+  { id: "pdf417", name: "PDF417", kind: "2D", example: "STUDENT|U12345678", nativeFormat: "pdf417" },
+  { id: "aztec", name: "Aztec", kind: "2D", example: "CAMPUS-PASS-2048", nativeFormat: "aztec" },
 ];
 
 export const ALL_FORMAT_IDS = BARCODE_FORMATS.map((format) => format.id);
@@ -92,20 +86,4 @@ export function getScannerModeLabel(mode: ScannerMode, customCount: number) {
   if (mode === "university") return "University ID";
   if (mode === "custom") return `Custom · ${customCount}`;
   return "Universal";
-}
-
-export function createHighAccuracyReader(formatIds: BarcodeFormatId[]) {
-  const hints = new Map<DecodeHintType, unknown>();
-  hints.set(
-    DecodeHintType.POSSIBLE_FORMATS,
-    BARCODE_FORMATS.filter((format) => formatIds.includes(format.id)).map(
-      (format) => format.zxingFormat,
-    ),
-  );
-  hints.set(DecodeHintType.TRY_HARDER, true);
-  hints.set(DecodeHintType.ASSUME_GS1, true);
-  return new BrowserMultiFormatReader(hints, {
-    delayBetweenScanAttempts: FRAME_INTERVAL_MS,
-    delayBetweenScanSuccess: 220,
-  });
 }

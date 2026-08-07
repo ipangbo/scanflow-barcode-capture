@@ -1,10 +1,5 @@
 import {
-  BarcodeFormat,
-  type BrowserMultiFormatReader,
-} from "@zxing/browser";
-import {
   BARCODE_FORMATS,
-  createHighAccuracyReader,
   nativeFormatNames,
 } from "./barcodes";
 import {
@@ -45,26 +40,11 @@ const setupErrors = {
     "Quagga2 could not be initialized. Choose ZXing JS in settings.",
 } as const;
 
-function createZXingDecoder(formatIds: BarcodeFormatId[]): ScannerFrameDecoder {
-  const reader: BrowserMultiFormatReader = createHighAccuracyReader(formatIds);
-  return {
-    async decode(canvas) {
-      try {
-        const result = reader.decodeFromCanvas(canvas);
-        return {
-          value: result.getText(),
-          format: BarcodeFormat[result.getBarcodeFormat()] ?? "UNKNOWN",
-          points: (result.getResultPoints() ?? []).map((point) => ({
-            x: point.getX(),
-            y: point.getY(),
-          })),
-        };
-      } catch {
-        return null;
-      }
-    },
-    dispose() {},
-  };
+async function createZXingDecoder(
+  formatIds: BarcodeFormatId[],
+): Promise<ScannerFrameDecoder> {
+  const { createZXingFrameDecoder } = await import("./zxing-decoder");
+  return createZXingFrameDecoder(formatIds);
 }
 
 async function createNativeDecoder(

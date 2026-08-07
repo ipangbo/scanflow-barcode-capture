@@ -3,21 +3,28 @@
 import { Settings } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUILD_NUMBER } from "./build-version";
-import { loadMduiComponents } from "./components/mdui-components";
-import { ExportPage } from "./components/export-page";
 import { ActionTooltip } from "./components/action-tooltip";
+import type { EntryDeletePrompt } from "./components/entry-delete-dialog";
 import {
-  EntryDeleteDialog,
-  type EntryDeletePrompt,
-} from "./components/entry-delete-dialog";
+  LazyEntryDeleteDialog,
+  LazyExportPage,
+  LazyProjectDialog,
+  LazyScannerSettingsDialog,
+  preloadEntryDeleteDialog,
+  preloadExportPage,
+  preloadProjectDialog,
+  preloadScannerSettingsDialog,
+} from "./components/lazy-secondary-ui";
+import {
+  loadMduiCoreComponents,
+  loadMduiScannerComponents,
+} from "./components/mdui-components";
 import { ProjectBar } from "./components/project-bar";
-import { ProjectDialog } from "./components/project-dialog";
 import { MobileNavigation, type MobileWorkspaceView } from "./components/mobile-navigation";
 import { RecordsPanel } from "./components/records-panel";
 import { ScannerPanel } from "./components/scanner-panel";
-import { ScannerSettingsDialog } from "./components/scanner-settings-dialog";
 import {
   ALL_FORMAT_IDS,
   DECODE_CONFIRMATION_WINDOW_MS,
@@ -134,7 +141,7 @@ export default function Home() {
   } | null>(null);
 
   useEffect(() => {
-    void loadMduiComponents();
+    void loadMduiCoreComponents();
   }, []);
 
   useEffect(() => {
@@ -407,6 +414,7 @@ export default function Home() {
   }, []);
 
   const openScannerSettings = () => {
+    void preloadScannerSettingsDialog();
     setDraftScanMode(scanMode);
     setDraftRecognitionEngine(recognitionEngine);
     setDraftCustomFormats([...customFormats]);
@@ -533,6 +541,7 @@ export default function Home() {
 
         setTorchAvailable(capabilities.torch === true);
         if (capabilities.zoom && capabilities.zoom.max > capabilities.zoom.min) {
+          void loadMduiScannerComponents();
           const currentZoom = track.getSettings().zoom ?? capabilities.zoom.min;
           setZoom(currentZoom);
           setZoomRange(capabilities.zoom);
@@ -747,6 +756,7 @@ export default function Home() {
   };
 
   const openProjectDialog = (mode: Exclude<ProjectDialogMode, null>) => {
+    void preloadProjectDialog();
     setProjectName(mode === "rename" ? activeProject?.name ?? "" : "");
     setProjectDialog(mode);
   };
@@ -792,6 +802,7 @@ export default function Home() {
 
   const deleteActiveProject = () => {
     if (!activeProject || projects.length === 1) return;
+    void preloadEntryDeleteDialog();
     setEntryDeletePrompt({
       kind: "project",
       projectId: activeProject.id,
@@ -856,11 +867,13 @@ export default function Home() {
   const requestDeleteRecord = (recordId: string) => {
     const record = recordsRef.current.find((item) => item.id === recordId);
     if (!record) return;
+    void preloadEntryDeleteDialog();
     setEntryDeletePrompt({ kind: "single", recordId, value: record.value });
   };
 
   const requestClearRecords = () => {
     if (!activeProject || !activeRecords.length) return;
+    void preloadEntryDeleteDialog();
     setEntryDeletePrompt({
       kind: "clear",
       step: 1,
@@ -920,6 +933,10 @@ export default function Home() {
   const enabledFormatIds = getEnabledFormatIds(scanMode, customFormats);
   const draftEnabledFormatIds = getEnabledFormatIds(draftScanMode, draftCustomFormats);
   const scannerModeLabel = getScannerModeLabel(scanMode, enabledFormatIds.length);
+  const openExportPage = () => {
+    void preloadExportPage();
+    setExportOpen(true);
+  };
 
   return (
     <main className="app-shell" id="top">
@@ -1000,7 +1017,7 @@ export default function Home() {
           copiedId={copiedId}
           onQueryChange={setQuery}
           onClearRecords={requestClearRecords}
-          onOpenExport={() => setExportOpen(true)}
+          onOpenExport={openExportPage}
           onCopy={copyValue}
           onDelete={requestDeleteRecord}
         />
@@ -1025,55 +1042,55 @@ export default function Home() {
         </span>
       </footer>
 
-      {exportOpen && activeProject && (
-        <ExportPage
-          project={activeProject}
-          entryCount={activeRecords.length}
-          totalScanCount={totalScanCount}
-          onClose={() => setExportOpen(false)}
-          onDownload={downloadExport}
-          onEmail={emailExport}
-        />
-      )}
+      <Suspense fallback={null}>
+        {exportOpen && activeProject && (
+          <LazyExportPage
+            project={activeProject}
+            entryCount={activeRecords.length}
+            totalScanCount={totalScanCount}
+            onClose={() => setExportOpen(false)}
+            onDownload={downloadExport}
+            onEmail={emailExport}
+          />
+        )}
 
+        {projectDialog && (
+          <LazyProjectDialog
+            mode={projectDialog}
+            name={projectName}
+            onNameChange={setProjectName}
+            onSubmit={saveProject}
+            onClose={() => {
+              setProjectDialog(null);
+              setProjectName("");
+            }}
+          />
+        )}
 
-      {projectDialog && (
-        <ProjectDialog
-          mode={projectDialog}
-          name={projectName}
-          onNameChange={setProjectName}
-          onSubmit={saveProject}
-          onClose={() => {
-            setProjectDialog(null);
-            setProjectName("");
-          }}
-        />
-      )}
+        {entryDeletePrompt && (
+          <LazyEntryDeleteDialog
+            prompt={entryDeletePrompt}
+            onCancel={() => setEntryDeletePrompt(null)}
+            onContinue={continueClearRecords}
+            onConfirm={confirmEntryDeletion}
+          />
+        )}
 
-      {entryDeletePrompt && (
-        <EntryDeleteDialog
-          prompt={entryDeletePrompt}
-          onCancel={() => setEntryDeletePrompt(null)}
-          onContinue={continueClearRecords}
-          onConfirm={confirmEntryDeletion}
-        />
-      )}
-
-
-      {settingsOpen && (
-        <ScannerSettingsDialog
-          mode={draftScanMode}
-          recognitionEngine={draftRecognitionEngine}
-          nativeEngineAvailable={nativeEngineAvailable}
-          customFormats={draftCustomFormats}
-          enabledFormatIds={draftEnabledFormatIds}
-          onModeChange={setDraftScanMode}
-          onRecognitionEngineChange={setDraftRecognitionEngine}
-          onToggleFormat={toggleDraftFormat}
-          onSubmit={saveScannerSettings}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
+        {settingsOpen && (
+          <LazyScannerSettingsDialog
+            mode={draftScanMode}
+            recognitionEngine={draftRecognitionEngine}
+            nativeEngineAvailable={nativeEngineAvailable}
+            customFormats={draftCustomFormats}
+            enabledFormatIds={draftEnabledFormatIds}
+            onModeChange={setDraftScanMode}
+            onRecognitionEngineChange={setDraftRecognitionEngine}
+            onToggleFormat={toggleDraftFormat}
+            onSubmit={saveScannerSettings}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+      </Suspense>
 
       {toast && (
         <mdui-snackbar
