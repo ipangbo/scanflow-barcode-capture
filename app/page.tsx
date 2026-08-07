@@ -1,9 +1,5 @@
 "use client";
 
-import {
-  BarcodeFormat,
-  BrowserMultiFormatReader,
-} from "@zxing/browser";
 import { Settings, ShieldCheck } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import type { FormEvent } from "react";
@@ -17,15 +13,12 @@ import { ScannerPanel } from "./components/scanner-panel";
 import { ScannerSettingsDialog } from "./components/scanner-settings-dialog";
 import {
   ALL_FORMAT_IDS,
-  BARCODE_FORMATS,
   DECODE_CONFIRMATION_WINDOW_MS,
   DUPLICATE_COOLDOWN_MS,
   FRAME_INTERVAL_MS,
   REQUIRED_DECODE_MATCHES,
-  createHighAccuracyReader,
   getEnabledFormatIds,
   getScannerModeLabel,
-  nativeFormatNames,
   normalizeFormat,
 } from "./lib/barcodes";
 import {
@@ -57,9 +50,13 @@ import {
   type AdvancedCameraConstraint,
   type BarcodePoint,
   type CameraCapabilities,
-  type NativeBarcodeDetector,
   type NativeBarcodeDetectorConstructor,
 } from "./lib/scanner-runtime";
+import {
+  createScannerFrameDecoder,
+  getEngineFailureMessage,
+  type ScannerFrameDecoder,
+} from "./lib/scanner-engines";
 import {
   readStoredAppState,
   writeStoredProjects,
@@ -72,7 +69,7 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const decoderRef = useRef<ScannerFrameDecoder | null>(null);
   const scanTimerRef = useRef<number | null>(null);
   const detectionTimerRef = useRef<number | null>(null);
   const scanCueTimerRef = useRef<number | null>(null);
@@ -385,7 +382,8 @@ export default function Home() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
-    readerRef.current = null;
+    decoderRef.current?.dispose();
+    decoderRef.current = null;
     setTorchOn(false);
     setTorchAvailable(false);
     setZoomRange(null);
@@ -446,6 +444,7 @@ export default function Home() {
         window.clearTimeout(scanFeedbackTimerRef.current);
       }
       streamRef.current?.getTracks().forEach((track) => track.stop());
+      decoderRef.current?.dispose();
     },
     [],
   );
@@ -454,9 +453,6 @@ export default function Home() {
     if (status === "starting" || status === "scanning") return;
 
     const enabledFormatIds = getEnabledFormatIds(scanMode, customFormats);
-    const requestedNativeFormats = BARCODE_FORMATS.filter((format) =>
-      enabledFormatIds.includes(format.id),
-    ).map((format) => format.nativeFormat);
 
     setCameraError("");
     setStatus("starting");
@@ -474,32 +470,18 @@ export default function Home() {
         BarcodeDetector?: NativeBarcodeDetectorConstructor;
       }
     ).BarcodeDetector;
-    let preferredNativeFormats: string[] = [];
-
-    if (recognitionEngine === "native") {
-      if (!NativeDetector?.getSupportedFormats) {
-        setNativeEngineAvailable(false);
-        setCameraError("BarcodeDetector API is unavailable in this browser. Choose ZXing JS in settings.");
-        setStatus("error");
-        return;
-      }
-
-      try {
-        const supportedFormats = await NativeDetector.getSupportedFormats();
-        preferredNativeFormats = requestedNativeFormats.filter((format) =>
-          supportedFormats.includes(format),
-        );
-      } catch {
-        setCameraError("BarcodeDetector API could not be initialized. Choose ZXing JS in settings.");
-        setStatus("error");
-        return;
-      }
-
-      if (!preferredNativeFormats.length) {
-        setCameraError("BarcodeDetector API does not support the selected formats. Choose ZXing JS in settings.");
-        setStatus("error");
-        return;
-      }
+    let frameDecoder: ScannerFrameDecoder;
+    try {
+      frameDecoder = await createScannerFrameDecoder(
+        recognitionEngine,
+        enabledFormatIds,
+        NativeDetector,
+      );
+    } catch (error) {
+      if (recognitionEngine === "native") setNativeEngineAvailable(false);
+      setCameraError(error instanceof Error ? error.message : "The selected engine could not start.");
+      setStatus("error");
+      return;
     }
 
     try {
@@ -549,15 +531,7 @@ export default function Home() {
         setZoomRange(null);
       }
 
-      let detector: NativeBarcodeDetector | null = null;
-      let reader: BrowserMultiFormatReader | null = null;
-      if (recognitionEngine === "native" && NativeDetector) {
-        detector = new NativeDetector({ formats: [...preferredNativeFormats] });
-      } else {
-        reader = createHighAccuracyReader(enabledFormatIds);
-        readerRef.current = reader;
-      }
-
+      decoderRef.current = frameDecoder;
       setEngine(recognitionEngine);
       scanningRef.current = true;
       setStatus("scanning");
@@ -565,7 +539,7 @@ export default function Home() {
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("Scanner canvas is unavailable");
-      let nativeErrors = 0;
+      let decodeErrors = 0;
 
       const scanFrame = async () => {
         if (!scanningRef.current) return;
@@ -597,7 +571,8 @@ export default function Home() {
               const cropHeight = frameRect
                 ? Math.min(sourceHeight - sourceY, frameRect.height / objectFitScale)
                 : sourceHeight;
-              const outputScale = Math.min(1, 1600 / cropWidth);
+              const maximumOutputWidth = recognitionEngine === "quagga" ? 1100 : 1600;
+              const outputScale = Math.min(1, maximumOutputWidth / cropWidth);
 
               const outputWidth = Math.max(1, Math.round(cropWidth * outputScale));
               const outputHeight = Math.max(1, Math.round(cropHeight * outputScale));
@@ -658,58 +633,25 @@ export default function Home() {
                 }, 1050);
               };
 
-              if (detector) {
-                try {
-                  const results = await detector.detect(canvas);
-                  const result = results[0];
-                  if (result?.rawValue) {
-                    const accepted = acceptDecodedValue(
-                      result.rawValue,
-                      nativeFormatNames[result.format] ?? result.format.toUpperCase(),
-                    );
-                    if (accepted) {
-                      const points = result.cornerPoints?.length
-                        ? result.cornerPoints
-                        : result.boundingBox
-                          ? [
-                              { x: result.boundingBox.left, y: result.boundingBox.top },
-                              { x: result.boundingBox.right, y: result.boundingBox.bottom },
-                            ]
-                          : [];
-                      revealDetectionRegion(points);
-                    }
-                  }
-                  nativeErrors = 0;
-                } catch {
-                  nativeErrors += 1;
-                  if (nativeErrors >= 2) {
-                    scanningRef.current = false;
-                    streamRef.current?.getTracks().forEach((streamTrack) => streamTrack.stop());
-                    streamRef.current = null;
-                    if (videoRef.current) videoRef.current.srcObject = null;
-                    detector = null;
-                    setEngine(null);
-                    setCameraError("BarcodeDetector API stopped responding. Choose ZXing JS in settings.");
-                    setStatus("error");
-                  }
+              try {
+                const result = await frameDecoder.decode(canvas);
+                if (result) {
+                  const accepted = acceptDecodedValue(result.value, result.format);
+                  if (accepted) revealDetectionRegion(result.points);
                 }
-              } else if (reader) {
-                try {
-                  const result = reader.decodeFromCanvas(canvas);
-                  const accepted = acceptDecodedValue(
-                    result.getText(),
-                    BarcodeFormat[result.getBarcodeFormat()] ?? "UNKNOWN",
-                  );
-                  if (accepted) {
-                    revealDetectionRegion(
-                      (result.getResultPoints() ?? []).map((point) => ({
-                        x: point.getX(),
-                        y: point.getY(),
-                      })),
-                    );
-                  }
-                } catch {
-                  // A frame without a readable barcode is expected during scanning.
+                decodeErrors = 0;
+              } catch {
+                decodeErrors += 1;
+                if (decodeErrors >= 2) {
+                  scanningRef.current = false;
+                  streamRef.current?.getTracks().forEach((streamTrack) => streamTrack.stop());
+                  streamRef.current = null;
+                  if (videoRef.current) videoRef.current.srcObject = null;
+                  frameDecoder.dispose();
+                  decoderRef.current = null;
+                  setEngine(null);
+                  setCameraError(getEngineFailureMessage(recognitionEngine));
+                  setStatus("error");
                 }
               }
             }
@@ -726,6 +668,8 @@ export default function Home() {
       scanningRef.current = false;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+      frameDecoder.dispose();
+      decoderRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
       setDetectionRegion(null);
       setCameraError(friendlyCameraError(error));

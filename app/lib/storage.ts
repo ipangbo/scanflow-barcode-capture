@@ -123,7 +123,9 @@ export function readStoredAppState(storage: Storage): StoredAppState {
     : [];
   const hasExplicitRecognitionEngine =
     settings.recognitionEngineConfigured === true &&
-    (settings.recognitionEngine === "native" || settings.recognitionEngine === "zxing");
+    (settings.recognitionEngine === "native" ||
+      settings.recognitionEngine === "zxing" ||
+      settings.recognitionEngine === "quagga");
 
   return {
     projects,

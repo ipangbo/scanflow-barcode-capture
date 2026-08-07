@@ -3,6 +3,7 @@ import {
   Cpu,
   GraduationCap,
   Library,
+  ScanLine,
   ScanSearch,
   SlidersHorizontal,
   X,
@@ -92,7 +93,7 @@ export function ScannerSettingsDialog({
             <span className="mode-icon"><ScanSearch size={20} /></span>
             <span className="mode-copy">
               <strong>Universal</strong>
-              <small>Scan every supported 1D and 2D format</small>
+              <small>All formats supported by the selected engine</small>
             </span>
           </label>
           <label className={mode === "custom" ? "is-selected" : ""}>
@@ -113,6 +114,34 @@ export function ScannerSettingsDialog({
 
         <fieldset className="engine-options">
           <legend>Recognition engine</legend>
+          <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
+            <input
+              type="radio"
+              name="recognition-engine"
+              value="zxing"
+              checked={recognitionEngine === "zxing"}
+              onChange={() => onRecognitionEngineChange("zxing")}
+            />
+            <span className="mode-icon"><Library size={20} /></span>
+            <span className="mode-copy">
+              <strong>ZXing JS</strong>
+              <small>Recommended for Universal and 2D · @zxing/browser</small>
+            </span>
+          </label>
+          <label className={recognitionEngine === "quagga" ? "is-selected" : ""}>
+            <input
+              type="radio"
+              name="recognition-engine"
+              value="quagga"
+              checked={recognitionEngine === "quagga"}
+              onChange={() => onRecognitionEngineChange("quagga")}
+            />
+            <span className="mode-icon"><ScanLine size={20} /></span>
+            <span className="mode-copy">
+              <strong>Quagga2</strong>
+              <small>Recommended for University ID · @ericblade/quagga2</small>
+            </span>
+          </label>
           <label
             className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
           >
@@ -130,20 +159,14 @@ export function ScannerSettingsDialog({
               <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
             </span>
           </label>
-          <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="recognition-engine"
-              value="zxing"
-              checked={recognitionEngine === "zxing"}
-              onChange={() => onRecognitionEngineChange("zxing")}
-            />
-            <span className="mode-icon"><Library size={20} /></span>
-            <span className="mode-copy">
-              <strong>ZXing JS</strong>
-              <small>Third-party engine · @zxing/browser</small>
+          <p className={`engine-recommendation ${recognitionEngine === "quagga" && mode !== "university" ? "is-warning" : ""}`}>
+            <strong>Recommended setup</strong>
+            <span>
+              {recognitionEngine === "quagga" && mode !== "university"
+                ? "Quagga2 recognizes supported 1D formats only. Use ZXing JS for QR and other 2D barcodes."
+                : "Use University ID with Quagga2 for Code 128. Use ZXing JS for Universal or any 2D barcode."}
             </span>
-          </label>
+          </p>
         </fieldset>
 
         <fieldset className="format-settings">

@@ -518,7 +518,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .mode-options, .engine-options, .format-settings { min-width: 0; margin: 24px 0 0; padding: 0; border: 0; }
 .mode-options > legend, .engine-options > legend, .format-settings-heading > span { padding: 0; color: #51554d; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .mode-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
-.engine-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.engine-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .mode-options > legend, .engine-options > legend { grid-column: 1 / -1; margin-bottom: 1px; }
 :is(.mode-options, .engine-options) > label { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 80px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: #f5f4ee; cursor: pointer; transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease; }
 :is(.mode-options, .engine-options) > label:hover { border-color: #a9ada3; background: var(--white); }
@@ -527,6 +527,10 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 :is(.mode-options, .engine-options) > label:has(input:focus-visible) { outline: 3px solid rgba(147, 185, 54, 0.22); outline-offset: 2px; }
 .engine-options > label.is-disabled { cursor: not-allowed; opacity: 0.5; }
 .engine-options > label.is-disabled:hover { border-color: var(--line); background: #f5f4ee; }
+.engine-recommendation { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 2px 0 0; padding: 9px 11px; border-radius: 9px; background: #eef3df; color: #5d6549; font-size: 10px; line-height: 1.45; }
+.engine-recommendation strong { color: #3f472f; white-space: nowrap; }
+.engine-recommendation.is-warning { background: #fff2d8; color: #745f31; }
+.engine-recommendation.is-warning strong { color: #5f4818; }
 .mode-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: #e8e8e0; color: #696e64; }
 .is-selected .mode-icon { background: var(--ink); color: var(--lime); }
 .mode-copy { min-width: 0; }

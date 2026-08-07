@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@ericblade/quagga2": "^1.12.1",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
     "drizzle-orm": "0.45.2",

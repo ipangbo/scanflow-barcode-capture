@@ -243,7 +243,9 @@ export function ScannerPanel({
           <Focus size={14} />
           {engine === "native"
             ? `${scannerModeLabel} · device-native detection`
-            : `${scannerModeLabel} · high-accuracy detection`}
+            : engine === "quagga"
+              ? `${scannerModeLabel} · Quagga2 1D detection`
+              : `${scannerModeLabel} · high-accuracy detection`}
         </p>
         {zoomRange && status === "scanning" && (
           <label>

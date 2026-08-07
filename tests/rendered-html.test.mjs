@@ -52,6 +52,7 @@ test("the page is split into maintainable feature modules", async () => {
     "lib/storage",
     "lib/exports",
     "lib/scanner-runtime",
+    "lib/scanner-engines",
   ];
 
   for (const moduleName of requiredModules) {
@@ -105,23 +106,26 @@ test("continuous scanning has strong multi-channel feedback", async () => {
 });
 
 test("successful scans render their detected barcode region", async () => {
-  const [pageSource, scannerPanelSource, stylesheet] = await Promise.all([
+  const [pageSource, scannerPanelSource, scannerEnginesSource, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
     readSource("app/components/scanner-panel.tsx"),
+    readSource("app/lib/scanner-engines.ts"),
     readSource("app/globals.css"),
   ]);
 
-  assert.match(pageSource, /result\.cornerPoints/);
-  assert.match(pageSource, /result\.getResultPoints\(\)/);
+  assert.match(scannerEnginesSource, /result\.cornerPoints/);
+  assert.match(scannerEnginesSource, /result\.getResultPoints\(\)/);
+  assert.match(pageSource, /revealDetectionRegion\(result\.points\)/);
   assert.match(scannerPanelSource, /className="detected-region"/);
   assert.match(stylesheet, /\.detected-region\s*\{/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
-  const [pageSource, settingsSource, barcodesSource] = await Promise.all([
+  const [pageSource, settingsSource, barcodesSource, scannerEnginesSource] = await Promise.all([
     readSource("app/page.tsx"),
     readSource("app/components/scanner-settings-dialog.tsx"),
     readSource("app/lib/barcodes.ts"),
+    readSource("app/lib/scanner-engines.ts"),
   ]);
 
   assert.match(settingsSource, /University ID/);
@@ -129,14 +133,18 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(settingsSource, /Choose exactly which formats to recognize/);
   assert.match(settingsSource, /BarcodeDetector API/);
   assert.match(settingsSource, /ZXing JS/);
+  assert.match(settingsSource, /Quagga2/);
+  assert.match(settingsSource, /Recommended for University ID/);
+  assert.match(settingsSource, /Use ZXing JS for Universal or any 2D barcode/);
   assert.match(settingsSource, /@zxing\/browser/);
+  assert.match(settingsSource, /@ericblade\/quagga2/);
   assert.match(pageSource, /recognitionEngine === "native"/);
-  assert.match(pageSource, /Choose ZXing JS in settings/);
+  assert.match(scannerEnginesSource, /Choose ZXing JS in settings/);
   assert.match(barcodesSource, /UNIVERSITY_FORMAT_IDS[^;]+code_128/s);
   assert.match(barcodesSource, /example: "12345678"/);
   assert.match(barcodesSource, /example: "5901234123457"/);
   assert.match(barcodesSource, /example: "https:\/\/example\.edu"/);
-  assert.match(pageSource, /createHighAccuracyReader\(enabledFormatIds\)/);
+  assert.match(scannerEnginesSource, /createHighAccuracyReader\(formatIds\)/);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {
@@ -192,8 +200,26 @@ test("local storage keys and migrations remain backward compatible", async () =>
   assert.match(storageSource, /typeof record\.scanCount === "number"/);
   assert.match(storageSource, /customFormats: customFormats\.length \? customFormats : \[\.\.\.ALL_FORMAT_IDS\]/);
   assert.match(storageSource, /settings\.recognitionEngine === "native"/);
+  assert.match(storageSource, /settings\.recognitionEngine === "quagga"/);
   assert.match(storageSource, /recognitionEngine: hasExplicitRecognitionEngine \? settings\.recognitionEngine : "zxing"/);
   assert.match(pageSource, /setRecognitionEngineConfigured\(true\)/);
+});
+
+test("Quagga2 is available as a Code 128 focused third-party engine", async () => {
+  const [pageSource, quaggaSource, modelsSource, scannerEnginesSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/lib/quagga-decoder.ts"),
+    readSource("app/lib/models.ts"),
+    readSource("app/lib/scanner-engines.ts"),
+  ]);
+
+  assert.match(modelsSource, /"native" \| "zxing" \| "quagga"/);
+  assert.match(quaggaSource, /code_128_reader/);
+  assert.match(quaggaSource, /locate: true/);
+  assert.match(quaggaSource, /decodeSingle/);
+  assert.match(scannerEnginesSource, /decodeCanvasWithQuagga\(canvas, supportedFormatIds\)/);
+  assert.match(scannerEnginesSource, /Quagga2 supports 1D barcodes only/);
+  assert.match(pageSource, /createScannerFrameDecoder/);
 });
 
 test("TXT export contains only one barcode value per line", async () => {
