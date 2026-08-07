@@ -1,5 +1,5 @@
 import { AlertTriangle, Trash2, X } from "lucide-react";
-import { MduiDialog } from "./mdui-bridge";
+import { MduiDialog, requestMduiDialogClose } from "./mdui-bridge";
 
 export type EntryDeletePrompt =
   | {
@@ -59,7 +59,7 @@ export function EntryDeleteDialog({
           <mdui-button-icon
             className="dialog-close"
             variant="outlined"
-            onClick={onCancel}
+            onClick={(event) => requestMduiDialogClose(event.currentTarget)}
             aria-label="Cancel deletion"
           >
             <X size={18} />
@@ -91,20 +91,20 @@ export function EntryDeleteDialog({
 
         {isFinalClear ? (
           <>
-            <mdui-button slot="action" className="dialog-danger" variant="filled" type="button" onClick={onConfirm}>
+            <mdui-button slot="action" className="dialog-danger" variant="filled" type="button" onClick={(event) => { onConfirm(); requestMduiDialogClose(event.currentTarget); }}>
               <Trash2 slot="icon" size={15} /> Clear all
             </mdui-button>
-            <mdui-button slot="action" variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
+            <mdui-button slot="action" variant="text" type="button" onClick={(event) => requestMduiDialogClose(event.currentTarget)}>Cancel</mdui-button>
           </>
         ) : (
           <>
-            <mdui-button slot="action" variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
+            <mdui-button slot="action" variant="text" type="button" onClick={(event) => requestMduiDialogClose(event.currentTarget)}>Cancel</mdui-button>
             <mdui-button
               slot="action"
               className="dialog-danger"
               variant="filled"
               type="button"
-              onClick={isSingle || isProject ? onConfirm : onContinue}
+              onClick={isSingle || isProject ? (event) => { onConfirm(); requestMduiDialogClose(event.currentTarget); } : onContinue}
             >
               {isSingle || isProject ? <><Trash2 slot="icon" size={15} /> Delete</> : "Continue"}
             </mdui-button>

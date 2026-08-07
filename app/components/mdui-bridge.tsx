@@ -65,6 +65,11 @@ type MduiDialogProps = {
   onDismiss: () => void;
 };
 
+export function requestMduiDialogClose(element: Element) {
+  const dialog = element.closest("mdui-dialog") as Dialog | null;
+  if (dialog) dialog.open = false;
+}
+
 export function MduiDialog({
   className,
   ariaLabelledBy,
@@ -76,16 +81,35 @@ export function MduiDialog({
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const handleClose = () => onDismiss();
-    element.addEventListener("close", handleClose);
-    return () => element.removeEventListener("close", handleClose);
+    const handleClosed = () => onDismiss();
+    element.addEventListener("closed", handleClosed);
+    return () => element.removeEventListener("closed", handleClosed);
   }, [onDismiss]);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    let cancelled = false;
+    let frame = 0;
+
+    void customElements.whenDefined("mdui-dialog").then(async () => {
+      await element.updateComplete;
+      if (cancelled) return;
+      frame = window.requestAnimationFrame(() => {
+        if (!cancelled) element.open = true;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     <mdui-dialog
       ref={ref}
       className={className}
-      open
       close-on-esc
       close-on-overlay-click
       aria-labelledby={ariaLabelledBy}

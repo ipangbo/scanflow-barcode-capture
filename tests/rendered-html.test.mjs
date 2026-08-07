@@ -201,6 +201,34 @@ test("MDUI feedback, motion, and dialog actions use native component behavior", 
   assert.match(deleteDialogSource, /slot="action"/);
 });
 
+test("dialogs and secondary pages preserve Material You enter and exit motion", async () => {
+  const [bridgeSource, projectDialogSource, settingsSource, exportSource, pageSource, stylesheet] = await Promise.all([
+    readSource("app/components/mdui-bridge.tsx"),
+    readSource("app/components/project-dialog.tsx"),
+    readSource("app/components/scanner-settings-dialog.tsx"),
+    readSource("app/components/export-page.tsx"),
+    readSource("app/page.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(bridgeSource, /customElements\.whenDefined\("mdui-dialog"\)/);
+  assert.match(bridgeSource, /requestAnimationFrame[\s\S]*element\.open = true/);
+  assert.match(bridgeSource, /dialog\.open = false/);
+  assert.match(bridgeSource, /addEventListener\("closed", handleClosed\)/);
+  assert.doesNotMatch(bridgeSource, /className=\{className\}[\s\S]*\n\s+open/);
+  assert.match(projectDialogSource, /requestMduiDialogClose\(event\.currentTarget\)/);
+  assert.match(settingsSource, /if \(onSubmit\(event\)\) requestMduiDialogClose\(event\.currentTarget\)/);
+  assert.doesNotMatch(pageSource, /setSettingsOpen\(false\);[\s\S]*Scanner settings saved/);
+  assert.match(exportSource, /ExportPagePhase = "entering" \| "open" \| "closing"/);
+  assert.match(exportSource, /onTransitionEnd/);
+  assert.match(stylesheet, /\.export-page\.is-open/);
+  assert.match(stylesheet, /\.export-page\.is-closing/);
+  assert.match(stylesheet, /--mdui-motion-duration-medium4/);
+  assert.match(stylesheet, /--mdui-motion-easing-emphasized-decelerate/);
+  assert.match(stylesheet, /--mdui-motion-easing-emphasized-accelerate/);
+  assert.doesNotMatch(stylesheet, /@keyframes export-page-in/);
+});
+
 test("project dialog and scanner feedback controls match the mobile interaction design", async () => {
   const [dialogSource, scannerSource, componentLoader, stylesheet] = await Promise.all([
     readSource("app/components/project-dialog.tsx"),
@@ -367,7 +395,7 @@ test("export uses one secondary page with download and email actions", async () 
   ]);
 
   assert.match(recordsSource, /className="export-open-button"/);
-  assert.match(exportPageSource, /className="export-page"/);
+  assert.match(exportPageSource, /className=\{`export-page is-\$\{phase\}`\}/);
   assert.match(exportPageSource, /className="export-page-stats"/);
   assert.match(exportPageSource, /className="export-choice-heading"/);
   assert.match(exportPageSource, /className="export-choice-icon"[^]*className="export-extension">\.TXT/);

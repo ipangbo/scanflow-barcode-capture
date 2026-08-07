@@ -6,7 +6,10 @@ import {
   FileText,
   Mail,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ExportFormat, ScanProject } from "../lib/models";
+
+type ExportPagePhase = "entering" | "open" | "closing";
 
 type ExportPageProps = {
   project: ScanProject;
@@ -25,16 +28,61 @@ export function ExportPage({
   onDownload,
   onEmail,
 }: ExportPageProps) {
+  const [phase, setPhase] = useState<ExportPagePhase>("entering");
+  const dismissedRef = useRef(false);
+  const finishClose = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    onClose();
+  }, [onClose]);
+  const requestClose = useCallback(() => {
+    setPhase((current) => current === "closing" ? current : "closing");
+  }, []);
+
+  useEffect(() => {
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setPhase((current) => current === "entering" ? "open" : current);
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") requestClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [requestClose]);
+
+  useEffect(() => {
+    if (phase !== "closing") return;
+    const fallback = window.setTimeout(finishClose, 260);
+    return () => window.clearTimeout(fallback);
+  }, [finishClose, phase]);
+
   return (
     <section
-      className="export-page"
+      className={`export-page is-${phase}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-page-title"
     >
-      <div className="export-page-shell">
+      <div
+        className="export-page-shell"
+        onTransitionEnd={(event) => {
+          if (phase === "closing" && event.currentTarget === event.target && event.propertyName === "transform") {
+            finishClose();
+          }
+        }}
+      >
         <header className="export-page-header">
-          <mdui-button type="button" variant="outlined" onClick={onClose}>
+          <mdui-button type="button" variant="outlined" onClick={requestClose}>
             <ArrowLeft slot="icon" size={17} /> Back to scanner
           </mdui-button>
           <div className="export-page-title">

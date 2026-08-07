@@ -1,13 +1,13 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import type { ProjectDialogMode } from "../lib/models";
-import { MduiDialog } from "./mdui-bridge";
+import { MduiDialog, requestMduiDialogClose } from "./mdui-bridge";
 
 type ProjectDialogProps = {
   mode: Exclude<ProjectDialogMode, null>;
   name: string;
   onNameChange: (name: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => boolean;
   onClose: () => void;
 };
 
@@ -37,7 +37,7 @@ export function ProjectDialog({
         <mdui-button-icon
           className="dialog-close"
           variant="outlined"
-          onClick={onClose}
+          onClick={(event) => requestMduiDialogClose(event.currentTarget)}
           aria-label="Close dialog"
         >
           <X size={18} />
@@ -46,7 +46,9 @@ export function ProjectDialog({
       <form
         id={formId}
         className="project-dialog-form"
-        onSubmit={onSubmit}
+        onSubmit={(event) => {
+          if (onSubmit(event)) requestMduiDialogClose(event.currentTarget);
+        }}
       >
         <mdui-text-field
           id="project-name"
@@ -60,7 +62,7 @@ export function ProjectDialog({
           autofocus
         />
       </form>
-      <mdui-button slot="action" variant="text" type="button" onClick={onClose}>Cancel</mdui-button>
+      <mdui-button slot="action" variant="text" type="button" onClick={(event) => requestMduiDialogClose(event.currentTarget)}>Cancel</mdui-button>
       <mdui-button slot="action" className="dialog-primary" variant="filled" type="submit" form={formId} disabled={!name.trim()}>
         {isCreating ? "Create project" : "Save name"}
       </mdui-button>

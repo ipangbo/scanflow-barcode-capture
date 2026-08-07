@@ -513,8 +513,12 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .footer-github:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .footer-meta b { padding: 4px 7px; border: 1px solid #d2d4ca; border-radius: 999px; background: rgba(251, 250, 245, 0.65); color: #656a60; font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: 0.03em; }
 
-.export-page { position: fixed; z-index: 35; inset: 0; overflow-y: auto; background: radial-gradient(circle at 90% 0%, rgba(201, 244, 93, 0.18), transparent 26rem), var(--paper); animation: export-page-in var(--mdui-motion-duration-medium1) var(--mdui-motion-easing-emphasized-decelerate); }
-.export-page-shell { width: min(1180px, 100%); min-height: 100%; margin: 0 auto; padding: 32px; }
+.export-page { position: fixed; z-index: 35; inset: 0; overflow-y: auto; opacity: 0; background: radial-gradient(circle at 90% 0%, rgba(201, 244, 93, 0.18), transparent 26rem), var(--paper); transition: opacity var(--mdui-motion-duration-medium2) var(--mdui-motion-easing-linear); }
+.export-page-shell { width: min(1180px, 100%); min-height: 100%; margin: 0 auto; padding: 32px; opacity: 0; transform: translateX(44px) scale(0.985); transform-origin: center right; transition: opacity var(--mdui-motion-duration-medium2) var(--mdui-motion-easing-linear), transform var(--mdui-motion-duration-medium4) var(--mdui-motion-easing-emphasized-decelerate); will-change: opacity, transform; }
+.export-page.is-open { opacity: 1; }
+.export-page.is-open .export-page-shell { opacity: 1; transform: translateX(0) scale(1); }
+.export-page.is-closing { opacity: 0; pointer-events: none; transition-duration: var(--mdui-motion-duration-short4); }
+.export-page.is-closing .export-page-shell { opacity: 0; transform: translateX(32px) scale(0.99); transition-duration: var(--mdui-motion-duration-short4); transition-timing-function: var(--mdui-motion-easing-linear), var(--mdui-motion-easing-emphasized-accelerate); }
 .export-page-header { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: start; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(23, 25, 22, 0.22); }
 .export-page-header > mdui-button { --shape-corner: 9px; width: max-content; height: 38px; color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 700; }
 .export-page-header h2 { margin: 8px 0 5px; font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.05em; line-height: 1.05; }
@@ -644,7 +648,6 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   100% { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); }
 }
 @keyframes row-in { from { opacity: 0; transform: translateY(-5px); } }
-@keyframes export-page-in { from { opacity: 0; transform: translateY(8px); } }
 
 @media (max-width: 1040px) {
   .app-shell { padding-inline: 24px; }

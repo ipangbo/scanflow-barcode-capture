@@ -423,7 +423,7 @@ export default function Home() {
     event.preventDefault();
     if (draftScanMode === "custom" && draftCustomFormats.length === 0) {
       setToast("Choose at least one barcode format.");
-      return;
+      return false;
     }
 
     const wasScanning = scanningRef.current;
@@ -433,12 +433,12 @@ export default function Home() {
     setRecognitionEngineConfigured(true);
     setScanModeConfigured(true);
     setCustomFormats([...draftCustomFormats]);
-    setSettingsOpen(false);
     setToast(
       wasScanning
         ? "Scanner settings saved. Restart the scanner to apply them."
         : "Scanner settings saved.",
     );
+    return true;
   };
 
   useEffect(
@@ -752,7 +752,7 @@ export default function Home() {
   const saveProject = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = projectName.trim();
-    if (!name) return;
+    if (!name) return false;
 
     const duplicate = projects.some(
       (project) =>
@@ -761,7 +761,7 @@ export default function Home() {
     );
     if (duplicate) {
       setToast("A project with that name already exists.");
-      return;
+      return false;
     }
 
     if (projectDialog === "create") {
@@ -785,8 +785,7 @@ export default function Home() {
       setToast("Project renamed.");
     }
 
-    setProjectDialog(null);
-    setProjectName("");
+    return true;
   };
 
   const deleteActiveProject = () => {
@@ -884,7 +883,6 @@ export default function Home() {
         recordsRef.current = nextRecords;
         return nextRecords;
       });
-      setEntryDeletePrompt(null);
       setToast("Entry deleted.");
       return;
     }
@@ -903,7 +901,6 @@ export default function Home() {
       setActiveProjectId(nextProject.id);
       setQuery("");
       setLastScan(null);
-      setEntryDeletePrompt(null);
       setToast("Project deleted.");
       return;
     }
@@ -915,7 +912,6 @@ export default function Home() {
       recordsRef.current = nextRecords;
       return nextRecords;
     });
-    setEntryDeletePrompt(null);
     setToast("Project entries cleared.");
   };
 

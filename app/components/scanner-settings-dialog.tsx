@@ -14,7 +14,7 @@ import type {
   ScannerEnginePreference,
   ScannerMode,
 } from "../lib/models";
-import { MduiDialog } from "./mdui-bridge";
+import { MduiDialog, requestMduiDialogClose } from "./mdui-bridge";
 
 type ScannerSettingsDialogProps = {
   mode: ScannerMode;
@@ -25,7 +25,7 @@ type ScannerSettingsDialogProps = {
   onModeChange: (mode: ScannerMode) => void;
   onRecognitionEngineChange: (engine: ScannerEnginePreference) => void;
   onToggleFormat: (formatId: BarcodeFormatId) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => boolean;
   onClose: () => void;
 };
 
@@ -52,7 +52,9 @@ export function ScannerSettingsDialog({
       <form
         id={formId}
         className="settings-dialog-content"
-        onSubmit={onSubmit}
+        onSubmit={(event) => {
+          if (onSubmit(event)) requestMduiDialogClose(event.currentTarget);
+        }}
       >
         <div className="dialog-heading settings-heading">
           <div>
@@ -63,7 +65,7 @@ export function ScannerSettingsDialog({
           <mdui-button-icon
             className="dialog-close"
             variant="outlined"
-            onClick={onClose}
+            onClick={(event) => requestMduiDialogClose(event.currentTarget)}
             aria-label="Close settings"
           >
             <X size={18} />
@@ -206,7 +208,7 @@ export function ScannerSettingsDialog({
         </fieldset>
 
       </form>
-      <mdui-button slot="action" type="button" variant="text" onClick={onClose}>Cancel</mdui-button>
+      <mdui-button slot="action" type="button" variant="text" onClick={(event) => requestMduiDialogClose(event.currentTarget)}>Cancel</mdui-button>
       <mdui-button
         slot="action"
         className="dialog-primary"
