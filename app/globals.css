@@ -301,7 +301,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .placeholder-barcode i:nth-child(3n) { width: 7px; height: 72px; }
 .placeholder-barcode i:nth-child(4n) { width: 2px; height: 64px; }
 .placeholder-barcode i:nth-child(5n) { width: 5px; height: 48px; }
-.camera-placeholder p { margin: 0; color: #e5e8df; font-size: 15px; font-weight: 630; }
+.camera-placeholder p { max-width: min(420px, calc(74% - 56px)); margin: 0; padding-inline: 8px; color: #e5e8df; font-size: clamp(12px, 1.8vw, 15px); font-weight: 630; line-height: 1.35; text-wrap: balance; }
 .camera-placeholder span:not(.spinner) { margin-top: 7px; color: #777c72; font-size: 12px; }
 .connecting { gap: 15px; }
 
@@ -626,6 +626,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .scanner-panel, .records-panel { padding: 16px; }
   .camera-stage { aspect-ratio: 4 / 3; }
   .scan-frame { inset: 17% 9%; }
+  .camera-placeholder p { max-width: calc(82% - 48px); font-size: 13px; }
   .feedback-row { align-items: flex-start; }
   .feedback-row p { max-width: 170px; text-align: right; line-height: 1.4; }
   .quality-controls { align-items: flex-start; flex-direction: column; }

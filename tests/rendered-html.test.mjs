@@ -29,7 +29,8 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Inbox/);
   assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
-  assert.match(html, /Your phone and barcode must have the same orientation/);
+  assert.match(html, /Match phone and barcode orientation/);
+  assert.doesNotMatch(html, /Your phone and barcode must have the same orientation/);
   assert.doesNotMatch(html, /Portrait with portrait/);
   assert.match(html, /Entries/);
   assert.match(html, /<strong>0<\/strong> scans/);
@@ -119,6 +120,17 @@ test("successful scans render their detected barcode region", async () => {
   assert.match(pageSource, /revealDetectionRegion\(result\.points\)/);
   assert.match(scannerPanelSource, /className="detected-region"/);
   assert.match(stylesheet, /\.detected-region\s*\{/);
+});
+
+test("idle camera guidance stays inside the viewfinder corners", async () => {
+  const [scannerPanelSource, stylesheet] = await Promise.all([
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(scannerPanelSource, /Match phone and barcode orientation/);
+  assert.match(stylesheet, /\.camera-placeholder p\s*\{[^}]*max-width:/s);
+  assert.match(stylesheet, /\.camera-placeholder p\s*\{[^}]*text-wrap: balance/s);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
