@@ -450,8 +450,26 @@ mdui-button, mdui-button-icon {
 .quality-controls output { min-width: 26px; color: #d9ddd4; font-family: var(--font-geist-mono), monospace; font-size: 10px; text-align: right; }
 .zoom-controls { display: grid; gap: 5px; width: min(100%, 330px); }
 .zoom-presets { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; }
-.zoom-presets mdui-chip { --shape-corner: 6px; height: 24px; color: #b9beb4; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 720; }
-.zoom-presets mdui-chip[selected] { --mdui-color-secondary-container: 201, 244, 93; --mdui-color-on-secondary-container: 23, 25, 22; color: var(--ink); }
+.zoom-presets mdui-chip {
+  --shape-corner: 6px;
+  --mdui-color-surface: 32, 35, 31;
+  --mdui-color-outline: 74, 80, 70;
+  --mdui-color-on-surface-variant: 190, 196, 185;
+  height: 24px;
+  color: #bec4b9;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  font-weight: 720;
+  transition:
+    background-color var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard),
+    border-color var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard),
+    color var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard);
+}
+.zoom-presets mdui-chip[selected] {
+  --mdui-color-secondary-container: 56, 67, 41;
+  --mdui-color-on-secondary-container: 220, 246, 151;
+  color: #dcf697;
+}
 .zoom-fine-control { display: grid !important; grid-template-columns: minmax(80px, 1fr) 30px; min-width: 150px; }
 
 .manual-entry { margin-top: 20px; padding-top: 17px; border-top: 1px solid #383b35; }

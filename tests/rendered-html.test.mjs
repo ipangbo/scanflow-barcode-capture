@@ -249,14 +249,19 @@ test("project dialog and scanner feedback controls match the mobile interaction 
 });
 
 test("camera zoom offers supported common presets and fine control", async () => {
-  const scannerPanelSource = await readSource("app/components/scanner-panel.tsx");
+  const [scannerPanelSource, stylesheet] = await Promise.all([
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
 
-  assert.match(scannerPanelSource, /ZOOM_PRESETS = \[0\.9, 1, 1\.2, 1\.5, 2, 3\]/);
+  assert.match(scannerPanelSource, /ZOOM_PRESETS = \[0\.9, 1, 1\.2, 1\.5\]/);
   assert.match(scannerPanelSource, /value >= zoomRange\.min && value <= zoomRange\.max/);
   assert.match(scannerPanelSource, /Common camera zoom levels/);
   assert.match(scannerPanelSource, /variant="filter"/);
   assert.match(scannerPanelSource, /Fine camera zoom/);
   assert.match(scannerPanelSource, /<mdui-slider/);
+  assert.match(stylesheet, /--mdui-color-surface: 32, 35, 31/);
+  assert.match(stylesheet, /--mdui-color-secondary-container: 56, 67, 41/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {

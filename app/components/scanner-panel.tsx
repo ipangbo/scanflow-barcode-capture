@@ -25,7 +25,7 @@ import {
 import { ScanCounter } from "./scan-counter";
 import { ActionTooltip } from "./action-tooltip";
 
-const ZOOM_PRESETS = [0.9, 1, 1.2, 1.5, 2, 3] as const;
+const ZOOM_PRESETS = [0.9, 1, 1.2, 1.5] as const;
 
 type ZoomRange = {
   min: number;
