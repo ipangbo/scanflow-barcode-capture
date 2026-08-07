@@ -6,6 +6,10 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUILD_NUMBER } from "./build-version";
 import { ExportPage } from "./components/export-page";
+import {
+  EntryDeleteDialog,
+  type EntryDeletePrompt,
+} from "./components/entry-delete-dialog";
 import { ProjectBar } from "./components/project-bar";
 import { ProjectDialog } from "./components/project-dialog";
 import { RecordsPanel } from "./components/records-panel";
@@ -89,6 +93,7 @@ export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [entryDeletePrompt, setEntryDeletePrompt] = useState<EntryDeletePrompt | null>(null);
   const [scanMode, setScanMode] = useState<ScannerMode>("university");
   const [recognitionEngine, setRecognitionEngine] = useState<ScannerEnginePreference>("zxing");
   const [recognitionEngineConfigured, setRecognitionEngineConfigured] = useState(false);
@@ -857,30 +862,52 @@ export default function Home() {
     }
   };
 
-  const deleteRecord = (recordId: string) => {
-    setRecords((current) => {
-      const nextRecords = current.filter((record) => record.id !== recordId);
-      recordsRef.current = nextRecords;
-      return nextRecords;
+  const requestDeleteRecord = (recordId: string) => {
+    const record = recordsRef.current.find((item) => item.id === recordId);
+    if (!record) return;
+    setEntryDeletePrompt({ kind: "single", recordId, value: record.value });
+  };
+
+  const requestClearRecords = () => {
+    if (!activeProject || !activeRecords.length) return;
+    setEntryDeletePrompt({
+      kind: "clear",
+      step: 1,
+      projectId: activeProject.id,
+      projectName: activeProject.name,
+      entryCount: activeRecords.length,
     });
   };
 
-  const clearRecords = () => {
-    if (!activeProject || !activeRecords.length) return;
-    if (
-      window.confirm(
-        `Clear all ${activeRecords.length} entries in “${activeProject.name}”? This can’t be undone.`,
-      )
-    ) {
+  const continueClearRecords = () => {
+    setEntryDeletePrompt((current) =>
+      current?.kind === "clear" ? { ...current, step: 2 } : current,
+    );
+  };
+
+  const confirmEntryDeletion = () => {
+    if (!entryDeletePrompt) return;
+    if (entryDeletePrompt.kind === "single") {
+      const recordId = entryDeletePrompt.recordId;
       setRecords((current) => {
-        const nextRecords = current.filter(
-          (record) => record.projectId !== activeProject.id,
-        );
+        const nextRecords = current.filter((record) => record.id !== recordId);
         recordsRef.current = nextRecords;
         return nextRecords;
       });
-      setToast("Project entries cleared.");
+      setEntryDeletePrompt(null);
+      setToast("Entry deleted.");
+      return;
     }
+
+    if (entryDeletePrompt.step !== 2) return;
+    const projectId = entryDeletePrompt.projectId;
+    setRecords((current) => {
+      const nextRecords = current.filter((record) => record.projectId !== projectId);
+      recordsRef.current = nextRecords;
+      return nextRecords;
+    });
+    setEntryDeletePrompt(null);
+    setToast("Project entries cleared.");
   };
 
   const enabledFormatIds = getEnabledFormatIds(scanMode, customFormats);
@@ -962,10 +989,10 @@ export default function Home() {
           query={query}
           copiedId={copiedId}
           onQueryChange={setQuery}
-          onClearRecords={clearRecords}
+          onClearRecords={requestClearRecords}
           onOpenExport={() => setExportOpen(true)}
           onCopy={copyValue}
-          onDelete={deleteRecord}
+          onDelete={requestDeleteRecord}
         />
 
       </section>
@@ -1009,6 +1036,15 @@ export default function Home() {
             setProjectDialog(null);
             setProjectName("");
           }}
+        />
+      )}
+
+      {entryDeletePrompt && (
+        <EntryDeleteDialog
+          prompt={entryDeletePrompt}
+          onCancel={() => setEntryDeletePrompt(null)}
+          onContinue={continueClearRecords}
+          onConfirm={confirmEntryDeletion}
         />
       )}
 

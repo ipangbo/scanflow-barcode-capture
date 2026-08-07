@@ -517,7 +517,16 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .dialog-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: #efeee8; cursor: pointer; font-size: 12px; font-weight: 700; }
 .dialog-actions .dialog-primary { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+.dialog-actions .dialog-danger { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-color: #c94f3a; background: var(--coral); color: #281713; }
+.dialog-actions .dialog-danger:hover { background: #ff846b; }
 .dialog-actions button:disabled { cursor: not-allowed; opacity: 0.4; }
+.confirm-dialog-message { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 10px; margin-top: 22px; padding: 13px; border: 1px solid #ead8c7; border-radius: 10px; background: #f8efe5; color: #685846; }
+.confirm-dialog-message.is-final { border-color: #efb8aa; background: #fff0eb; color: #6e352a; }
+.confirm-dialog-message svg { margin-top: 1px; color: #b56b36; }
+.confirm-dialog-message.is-final svg { color: #c94f3a; }
+.confirm-dialog-message p { margin: 0; font-size: 12px; line-height: 1.55; }
+.confirm-dialog-message code { padding: 2px 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.65); color: #40382f; font-family: var(--font-geist-mono), monospace; font-size: 11px; overflow-wrap: anywhere; }
+.confirm-actions.is-reversed { justify-content: flex-end; }
 
 .mode-options, .engine-options, .format-settings { min-width: 0; margin: 24px 0 0; padding: 0; border: 0; }
 .mode-options > legend, .engine-options > legend, .format-settings-heading > span { padding: 0; color: #51554d; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }

@@ -144,6 +144,24 @@ test("entries explain their browser-only storage risk", async () => {
   assert.match(stylesheet, /\.storage-note\s*\{/);
 });
 
+test("entry deletion is confirmed and clear-all requires two differently ordered steps", async () => {
+  const [pageSource, dialogSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/entry-delete-dialog.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(pageSource, /requestDeleteRecord/);
+  assert.match(pageSource, /requestClearRecords/);
+  assert.match(pageSource, /continueClearRecords/);
+  assert.match(pageSource, /entryDeletePrompt\.step !== 2/);
+  assert.match(dialogSource, /Delete entry\?/);
+  assert.match(dialogSource, /Clear all entries\?/);
+  assert.match(dialogSource, /Final confirmation/);
+  assert.match(dialogSource, /isFinalClear[\s\S]*Clear all[\s\S]*Cancel[\s\S]*Cancel[\s\S]*Delete/);
+  assert.match(stylesheet, /\.dialog-actions \.dialog-danger\s*\{/);
+});
+
 test("scanner modes constrain formats and include examples", async () => {
   const [pageSource, settingsSource, barcodesSource, scannerEnginesSource] = await Promise.all([
     readSource("app/page.tsx"),
