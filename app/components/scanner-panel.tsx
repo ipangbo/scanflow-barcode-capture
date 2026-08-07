@@ -23,6 +23,8 @@ import {
 } from "../lib/models";
 import { ScanCounter } from "./scan-counter";
 
+const ZOOM_PRESETS = [0.9, 1, 1.2, 1.5, 2, 3] as const;
+
 type ZoomRange = {
   min: number;
   max: number;
@@ -92,6 +94,9 @@ export function ScannerPanel({
         error: "Camera offline",
       }[status];
   const lastScanCount = lastScan?.record.scanCount ?? 0;
+  const availableZoomPresets = zoomRange
+    ? ZOOM_PRESETS.filter((value) => value >= zoomRange.min && value <= zoomRange.max)
+    : [];
 
   return (
     <div className="scanner-panel">
@@ -248,19 +253,34 @@ export function ScannerPanel({
               : `${scannerModeLabel} · high-accuracy detection`}
         </p>
         {zoomRange && status === "scanning" && (
-          <label>
-            <ZoomIn size={14} />
-            <span className="sr-only">Camera zoom</span>
-            <mdui-slider
-              min={zoomRange.min}
-              max={zoomRange.max}
-              step={zoomRange.step || 0.1}
-              value={zoom}
-              nolabel
-              onInput={(event) => onZoomChange(Number((event.currentTarget as HTMLElement & { value: number }).value))}
-            />
-            <output>{zoom.toFixed(1)}×</output>
-          </label>
+          <div className="zoom-controls">
+            <div className="zoom-presets" role="group" aria-label="Common camera zoom levels">
+              <ZoomIn size={14} aria-hidden="true" />
+              {availableZoomPresets.map((preset) => (
+                <mdui-chip
+                  key={preset}
+                  variant="filter"
+                  selected={Math.abs(zoom - preset) < 0.05}
+                  onClick={() => onZoomChange(preset)}
+                  aria-label={`Set camera zoom to ${preset.toFixed(1)} times`}
+                >
+                  {preset.toFixed(1)}×
+                </mdui-chip>
+              ))}
+            </div>
+            <label className="zoom-fine-control">
+              <span className="sr-only">Fine camera zoom</span>
+              <mdui-slider
+                min={zoomRange.min}
+                max={zoomRange.max}
+                step={zoomRange.step || 0.1}
+                value={zoom}
+                nolabel
+                onInput={(event) => onZoomChange(Number((event.currentTarget as HTMLElement & { value: number }).value))}
+              />
+              <output>{zoom.toFixed(1)}×</output>
+            </label>
+          </div>
         )}
       </div>
 

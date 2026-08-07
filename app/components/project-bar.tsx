@@ -5,6 +5,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ScanProject } from "../lib/models";
+import { HoverTooltip } from "./hover-tooltip";
 import { MduiSelect } from "./mdui-bridge";
 
 type ProjectBarProps = {
@@ -59,7 +60,7 @@ export function ProjectBar({
         </mdui-chip>
       </div>
       <div className="project-actions">
-        <mdui-tooltip content="New project" placement="bottom" trigger="hover focus">
+        <HoverTooltip content="New project" placement="bottom">
           <mdui-button-icon
             className="project-icon-action project-create"
             variant="outlined"
@@ -68,8 +69,8 @@ export function ProjectBar({
           >
             <Plus size={17} />
           </mdui-button-icon>
-        </mdui-tooltip>
-        <mdui-tooltip content="Rename project" placement="bottom" trigger="hover focus">
+        </HoverTooltip>
+        <HoverTooltip content="Rename project" placement="bottom">
           <mdui-button-icon
             className="project-icon-action"
             variant="outlined"
@@ -78,11 +79,10 @@ export function ProjectBar({
           >
             <Pencil size={15} />
           </mdui-button-icon>
-        </mdui-tooltip>
-        <mdui-tooltip
+        </HoverTooltip>
+        <HoverTooltip
           content={canDelete ? "Delete project" : "Create another project before deleting this one"}
           placement="bottom"
-          trigger="hover focus"
         >
           <mdui-button-icon
             className="project-icon-action danger"
@@ -93,7 +93,7 @@ export function ProjectBar({
           >
             <Trash2 size={16} />
           </mdui-button-icon>
-        </mdui-tooltip>
+        </HoverTooltip>
       </div>
     </section>
   );

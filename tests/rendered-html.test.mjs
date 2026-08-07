@@ -164,8 +164,9 @@ test("entry deletion is confirmed and clear-all requires two differently ordered
 });
 
 test("MDUI feedback, motion, and dialog actions use native component behavior", async () => {
-  const [pageSource, projectBarSource, recordsSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
+  const [pageSource, tooltipSource, projectBarSource, recordsSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
+    readSource("app/components/hover-tooltip.tsx"),
     readSource("app/components/project-bar.tsx"),
     readSource("app/components/records-panel.tsx"),
     readSource("app/components/scanner-settings-dialog.tsx"),
@@ -185,10 +186,26 @@ test("MDUI feedback, motion, and dialog actions use native component behavior", 
   assert.doesNotMatch(projectBarSource, /project-create[\s\S]*variant="tonal"/);
   assert.match(recordsSource, /slot="end-icon"/);
   assert.match(recordsSource, /<Repeat2 slot="icon"/);
-  assert.match(pageSource, /<mdui-tooltip/);
+  assert.match(pageSource, /<HoverTooltip/);
+  assert.match(tooltipSource, /\(hover: hover\) and \(pointer: fine\)/);
+  assert.match(tooltipSource, /customElements\.whenDefined\("mdui-tooltip"\)/);
+  assert.match(tooltipSource, /trigger=\{supportsHover === true \? "hover" : "manual"\}/);
+  assert.match(tooltipSource, /if \(!supportsHover\) tooltip\.open = false/);
+  assert.doesNotMatch(tooltipSource, /trigger="hover focus"/);
   assert.match(settingsSource, /slot="action"[\s\S]*form=\{formId\}/);
   assert.doesNotMatch(settingsSource, /settings-actions/);
   assert.match(deleteDialogSource, /slot="action"/);
+});
+
+test("camera zoom offers supported common presets and fine control", async () => {
+  const scannerPanelSource = await readSource("app/components/scanner-panel.tsx");
+
+  assert.match(scannerPanelSource, /ZOOM_PRESETS = \[0\.9, 1, 1\.2, 1\.5, 2, 3\]/);
+  assert.match(scannerPanelSource, /value >= zoomRange\.min && value <= zoomRange\.max/);
+  assert.match(scannerPanelSource, /Common camera zoom levels/);
+  assert.match(scannerPanelSource, /variant="filter"/);
+  assert.match(scannerPanelSource, /Fine camera zoom/);
+  assert.match(scannerPanelSource, /<mdui-slider/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
