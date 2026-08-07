@@ -480,13 +480,16 @@ test("export uses one secondary page with download and email actions", async () 
 });
 
 test("build number is shown in the footer and increments before builds", async () => {
-  const [pageSource, packageSource, incrementSource] = await Promise.all([
+  const [pageSource, packageSource, incrementSource, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
     readSource("package.json"),
     readSource("scripts/increment-build-version.mjs"),
+    readSource("app/globals.css"),
   ]);
 
   assert.match(pageSource, /Build \{BUILD_NUMBER\}/);
   assert.match(packageSource, /"prebuild": "node scripts\/increment-build-version\.mjs"/);
   assert.match(incrementSource, /currentBuild \+ 1/);
+  assert.match(stylesheet, /@media \(max-width: 720px\)[\s\S]*footer \{[^}]*justify-content: center[^}]*text-align: center/s);
+  assert.match(stylesheet, /@media \(max-width: 720px\)[\s\S]*\.footer-meta \{[^}]*width: 100%[^}]*justify-content: center/s);
 });

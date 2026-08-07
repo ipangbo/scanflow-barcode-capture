@@ -766,8 +766,8 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .record-tools { grid-template-columns: 1fr; }
   .export-open-button { width: 100%; }
   .records-list, .empty-state { min-height: 320px; }
-  footer { align-items: flex-end; padding-top: 16px; }
-  .footer-meta { flex-wrap: wrap; }
+  footer { align-items: center; justify-content: center; padding: 16px 0 0; text-align: center; }
+  .footer-meta { width: 100%; justify-content: center; flex-wrap: wrap; row-gap: 8px; }
   .export-page-shell { padding: 18px 12px 24px; }
   .export-page-header { grid-template-columns: 1fr; gap: 20px; padding-bottom: 22px; }
   .export-page-header h2 { font-size: 30px; }
