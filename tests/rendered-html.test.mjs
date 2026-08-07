@@ -32,12 +32,13 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Your phone and barcode must have the same orientation/);
   assert.doesNotMatch(html, /Portrait with portrait/);
   assert.match(html, /Entries/);
-  assert.match(html, /<strong>0<\/strong> scans/);
+  assert.match(html, /<strong>0<\/strong>[\s\S]*?scans/);
   assert.ok(buildNumber, "build number should be readable");
   assert.match(html, new RegExp(`Build\\s*(?:<!-- -->)?${buildNumber}`));
   assert.doesNotMatch(html, /Device only/);
   assert.doesNotMatch(html, /01\s*\/\s*CAPTURE|02\s*\/\s*ENTRIES/i);
   assert.doesNotMatch(html, /Download or email this project/);
+  assert.doesNotMatch(html, /Privacy first/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
   assert.match(html, /https:\/\/github\.com\/ipangbo\/scanflow-barcode-capture/);
 });
@@ -162,9 +163,11 @@ test("entry deletion is confirmed and clear-all requires two differently ordered
   assert.match(stylesheet, /\.dialog-danger\s*\{/);
 });
 
-test("MDUI feedback and dialog actions use native component behavior", async () => {
-  const [pageSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
+test("MDUI feedback, motion, and dialog actions use native component behavior", async () => {
+  const [pageSource, projectBarSource, recordsSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
+    readSource("app/components/project-bar.tsx"),
+    readSource("app/components/records-panel.tsx"),
     readSource("app/components/scanner-settings-dialog.tsx"),
     readSource("app/components/entry-delete-dialog.tsx"),
     readSource("app/components/mdui-components.ts"),
@@ -175,7 +178,14 @@ test("MDUI feedback and dialog actions use native component behavior", async () 
   assert.doesNotMatch(pageSource, /className="toast"/);
   assert.doesNotMatch(stylesheet, /\.toast\s*\{/);
   assert.match(componentLoader, /components\/ripple\.js/);
+  assert.match(componentLoader, /components\/tooltip\.js/);
   assert.match(stylesheet, /--mdui-state-layer-pressed:/);
+  assert.match(stylesheet, /--mdui-motion-duration-short3/);
+  assert.match(projectBarSource, /project-create[\s\S]*variant="outlined"/);
+  assert.doesNotMatch(projectBarSource, /project-create[\s\S]*variant="tonal"/);
+  assert.match(recordsSource, /slot="end-icon"/);
+  assert.match(recordsSource, /<Repeat2 slot="icon"/);
+  assert.match(pageSource, /<mdui-tooltip/);
   assert.match(settingsSource, /slot="action"[\s\S]*form=\{formId\}/);
   assert.doesNotMatch(settingsSource, /settings-actions/);
   assert.match(deleteDialogSource, /slot="action"/);

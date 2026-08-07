@@ -51,33 +51,49 @@ export function ProjectBar({
         </MduiSelect>
       </div>
       <div className="project-summary" aria-label="Project statistics">
-        <mdui-chip variant="assist"><strong>{activeEntryCount}</strong> entries</mdui-chip>
-        <mdui-chip variant="assist"><strong>{totalScanCount}</strong> scans</mdui-chip>
+        <mdui-chip variant="assist">
+          <span className="project-stat-content"><strong>{activeEntryCount}</strong><span>entries</span></span>
+        </mdui-chip>
+        <mdui-chip variant="assist">
+          <span className="project-stat-content"><strong>{totalScanCount}</strong><span>scans</span></span>
+        </mdui-chip>
       </div>
       <div className="project-actions">
-        <mdui-button className="project-create" type="button" variant="tonal" onClick={onCreate}>
-          <Plus slot="icon" size={16} />
-          <span>New project</span>
-        </mdui-button>
-        <mdui-button-icon
-          className="project-icon-action"
-          variant="outlined"
-          onClick={onRename}
-          aria-label="Rename project"
-          title="Rename project"
+        <mdui-tooltip content="New project" placement="bottom" trigger="hover focus">
+          <mdui-button-icon
+            className="project-icon-action project-create"
+            variant="outlined"
+            onClick={onCreate}
+            aria-label="New project"
+          >
+            <Plus size={17} />
+          </mdui-button-icon>
+        </mdui-tooltip>
+        <mdui-tooltip content="Rename project" placement="bottom" trigger="hover focus">
+          <mdui-button-icon
+            className="project-icon-action"
+            variant="outlined"
+            onClick={onRename}
+            aria-label="Rename project"
+          >
+            <Pencil size={15} />
+          </mdui-button-icon>
+        </mdui-tooltip>
+        <mdui-tooltip
+          content={canDelete ? "Delete project" : "Create another project before deleting this one"}
+          placement="bottom"
+          trigger="hover focus"
         >
-          <Pencil size={15} />
-        </mdui-button-icon>
-        <mdui-button-icon
-          className="project-icon-action danger"
-          variant="outlined"
-          onClick={onDelete}
-          disabled={!canDelete}
-          aria-label="Delete project"
-          title={canDelete ? "Delete project" : "Create another project before deleting this one"}
-        >
-          <Trash2 size={16} />
-        </mdui-button-icon>
+          <mdui-button-icon
+            className="project-icon-action danger"
+            variant="outlined"
+            onClick={onDelete}
+            disabled={!canDelete}
+            aria-label="Delete project"
+          >
+            <Trash2 size={16} />
+          </mdui-button-icon>
+        </mdui-tooltip>
       </div>
     </section>
   );

@@ -18,6 +18,7 @@ export function loadMduiComponents() {
     import("mdui/components/snackbar.js"),
     import("mdui/components/switch.js"),
     import("mdui/components/text-field.js"),
+    import("mdui/components/tooltip.js"),
   ]);
   return loadingPromise;
 }

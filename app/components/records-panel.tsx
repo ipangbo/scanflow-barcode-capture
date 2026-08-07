@@ -86,15 +86,24 @@ export function RecordsPanel({
               <span className="record-number">{String(filteredRecords.length - index).padStart(2, "0")}</span>
               <div className="record-main">
                 <div className="record-value-line">
-                  <mdui-button variant="text" type="button" onClick={() => onCopy(record)} title="Copy barcode">
+                  <mdui-button
+                    className={copiedId === record.id ? "is-copied" : ""}
+                    variant="text"
+                    type="button"
+                    onClick={() => onCopy(record)}
+                    aria-label={`Copy barcode ${record.value}`}
+                  >
                     <strong>{record.value}</strong>
-                    {copiedId === record.id ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedId === record.id
+                      ? <Check slot="end-icon" size={14} aria-hidden="true" />
+                      : <Copy slot="end-icon" size={14} aria-hidden="true" />}
                   </mdui-button>
                 </div>
                 <div className="record-meta">
                   <mdui-chip variant="assist" className="format-chip">{normalizeFormat(record.format)}</mdui-chip>
                   <mdui-chip variant="assist" className={`scan-count ${record.scanCount > 1 ? "is-repeat" : ""}`}>
-                    <Repeat2 size={11} /> {record.scanCount} {record.scanCount === 1 ? "scan" : "scans"}
+                    <Repeat2 slot="icon" size={12} aria-hidden="true" />
+                    {record.scanCount} {record.scanCount === 1 ? "scan" : "scans"}
                   </mdui-chip>
                   <time dateTime={record.scannedAt}>
                     {new Date(record.scannedAt).toLocaleString("en-US", {
@@ -108,14 +117,16 @@ export function RecordsPanel({
                   </time>
                 </div>
               </div>
-              <mdui-button-icon
-                className="delete-record"
-                variant="outlined"
-                onClick={() => onDelete(record.id)}
-                aria-label={`Delete barcode ${record.value}`}
-              >
-                <Trash2 size={16} />
-              </mdui-button-icon>
+              <mdui-tooltip content="Delete entry" placement="left" trigger="hover focus">
+                <mdui-button-icon
+                  className="delete-record"
+                  variant="outlined"
+                  onClick={() => onDelete(record.id)}
+                  aria-label={`Delete barcode ${record.value}`}
+                >
+                  <Trash2 size={16} />
+                </mdui-button-icon>
+              </mdui-tooltip>
             </mdui-card>
           ))
         ) : (

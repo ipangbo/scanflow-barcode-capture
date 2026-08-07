@@ -41,8 +41,12 @@ export function ExportPage({
             <p className="panel-kicker">Export</p>
             <h2 id="export-page-title">Share “{project.name}”</h2>
             <div className="export-page-stats" aria-label={`${entryCount} entries and ${totalScanCount} scans`}>
-              <mdui-chip variant="assist"><strong>{entryCount}</strong> entries</mdui-chip>
-              <mdui-chip variant="assist"><strong>{totalScanCount}</strong> scans</mdui-chip>
+              <mdui-chip variant="assist">
+                <span className="export-stat-content"><strong>{entryCount}</strong><span>entries</span></span>
+              </mdui-chip>
+              <mdui-chip variant="assist">
+                <span className="export-stat-content"><strong>{totalScanCount}</strong><span>scans</span></span>
+              </mdui-chip>
             </div>
           </div>
         </header>

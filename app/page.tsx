@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, ShieldCheck } from "lucide-react";
+import { Settings } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -935,16 +935,16 @@ export default function Home() {
           <span>ScanFlow</span>
         </a>
         <div className="topbar-actions">
-          <mdui-button
-            className="settings-trigger"
-            type="button"
-            variant="filled"
-            onClick={openScannerSettings}
-            aria-label={`Scanner settings. Current mode: ${scannerModeLabel}`}
-          >
-            <Settings slot="icon" size={16} />
-            <span>{scannerModeLabel}</span>
-          </mdui-button>
+          <mdui-tooltip content={`Scanner settings · ${scannerModeLabel}`} placement="bottom-end" trigger="hover focus">
+            <mdui-button-icon
+              className="settings-trigger"
+              variant="filled"
+              onClick={openScannerSettings}
+              aria-label={`Scanner settings. Current mode: ${scannerModeLabel}`}
+            >
+              <Settings size={17} />
+            </mdui-button-icon>
+          </mdui-tooltip>
         </div>
       </header>
 
@@ -1007,7 +1007,6 @@ export default function Home() {
       </section>
 
       <footer>
-        <p><ShieldCheck size={15} /> Privacy first: camera frames, projects, and entries never leave this device.</p>
         <span className="footer-meta">
           <a
             className="footer-github"
