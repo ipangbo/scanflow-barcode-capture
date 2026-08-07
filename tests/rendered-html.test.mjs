@@ -151,7 +151,10 @@ test("mobile text inputs avoid iPhone Safari focus zoom", async () => {
 
   assert.match(stylesheet, /@media \(max-width: 720px\) and \(pointer: coarse\)/);
   assert.match(stylesheet, /\.manual-entry mdui-text-field,[\s\S]*\.search-box,[\s\S]*\.project-dialog-form mdui-text-field/);
-  assert.match(stylesheet, /::part\(input\)\s*\{\s*font-size: 16px;/);
+  assert.match(stylesheet, /\.project-select::part\(text-field__input\)/);
+  assert.match(stylesheet, /font-size: 16px;[\s\S]*transform: scale\(0\.8125\)/);
+  assert.match(stylesheet, /width: 123\.077%/);
+  assert.match(stylesheet, /\.project-select,[\s\S]*touch-action: manipulation/);
 });
 
 test("entries explain their browser-only storage risk", async () => {

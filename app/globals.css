@@ -728,8 +728,20 @@ footer span { font-family: var(--font-geist-mono), monospace; }
     .manual-entry mdui-text-field,
     .search-box,
     .project-dialog-form mdui-text-field
-  )::part(input) {
+  )::part(input),
+  .project-select::part(text-field__input) {
+    box-sizing: border-box;
+    width: 123.077%;
+    max-width: none;
     font-size: 16px;
+    transform: scale(0.8125);
+    transform-origin: left center;
+  }
+
+  .project-select,
+  .project-select::part(text-field),
+  .project-select::part(text-field__container) {
+    touch-action: manipulation;
   }
 }
 
