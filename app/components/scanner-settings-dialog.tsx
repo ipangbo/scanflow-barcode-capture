@@ -15,6 +15,7 @@ import type {
   ScannerMode,
 } from "../lib/models";
 import { MduiDialog, requestMduiDialogClose } from "./mdui-bridge";
+import { SettingsAbout } from "./settings-about";
 
 type ScannerSettingsDialogProps = {
   mode: ScannerMode;
@@ -206,6 +207,8 @@ export function ScannerSettingsDialog({
             })}
           </div>
         </fieldset>
+
+        <SettingsAbout />
 
       </form>
       <mdui-button slot="action" type="button" variant="text" onClick={(event) => requestMduiDialogClose(event.currentTarget)}>Cancel</mdui-button>

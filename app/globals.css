@@ -642,6 +642,31 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .format-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .format-copy em { color: #969a90; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-style: normal; font-weight: 750; }
 .format-copy code { display: block; overflow: hidden; margin-top: 4px; color: #777c72; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-geist-mono), monospace; font-size: 9px; }
+.settings-about { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+.settings-about-heading { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 11px; }
+.settings-about-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--ink); color: var(--lime); }
+.settings-about-heading h3 { margin: 3px 0 0; font-size: 17px; letter-spacing: -0.025em; }
+.settings-about-heading > div > p:last-child { max-width: 520px; margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.settings-about-build { align-self: start; padding: 5px 8px; border: 1px solid #d2d4ca; border-radius: 999px; background: #f5f4ee; color: #656a60; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 750; }
+.settings-about-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 13px; }
+.settings-about-detail { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 48px; padding: 9px 11px; border: 1px solid #dedfd7; border-radius: 10px; background: #f6f5f0; color: #666b62; text-decoration: none; }
+.settings-about-detail > span { min-width: 0; }
+.settings-about-detail strong, .settings-about-detail small { display: block; }
+.settings-about-detail strong { color: #41463e; font-size: 11px; }
+.settings-about-detail small { margin-top: 2px; color: var(--muted); font-size: 9px; }
+a.settings-about-detail { cursor: pointer; transition: border-color var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard), background-color var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard); }
+a.settings-about-detail:hover { border-color: #adb1a7; background: var(--white); }
+a.settings-about-detail:focus-visible { outline: 3px solid rgba(147, 185, 54, 0.2); outline-offset: 2px; }
+.settings-about-share { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; margin-top: 9px; padding: 14px; border: 1px solid #cedca5; border-radius: 12px; background: #f1f7df; }
+.settings-about-address { min-width: 0; }
+.settings-about-address p { display: flex; align-items: center; gap: 6px; margin: 0; color: #4f5b2d; font-size: 10px; font-weight: 750; }
+.settings-about-address > a, .settings-about-address > span { display: block; overflow-wrap: anywhere; margin-top: 7px; color: #273014; font-family: var(--font-geist-mono), monospace; font-size: 10px; font-weight: 650; line-height: 1.45; }
+.settings-about-address > a { text-decoration-color: rgba(39, 48, 20, 0.35); text-underline-offset: 3px; }
+.settings-about-address > small { display: block; max-width: 420px; margin-top: 8px; color: #6f7952; font-size: 9px; line-height: 1.45; }
+.settings-about-qr { display: grid; justify-items: center; gap: 5px; margin: 0; }
+.settings-about-qr-frame { display: grid; place-items: center; width: 126px; height: 126px; overflow: hidden; border: 1px solid rgba(79, 99, 31, 0.2); border-radius: 10px; background: var(--white); color: #879268; }
+.settings-about-qr-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.settings-about-qr figcaption { color: #68733d; font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; }
 .spinner { --mdui-color-primary: 201, 244, 93; width: 24px; height: 24px; }
 .spinner.dark { --mdui-color-primary: 23, 25, 22; width: 20px; height: 20px; }
 
@@ -845,6 +870,10 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .placeholder-barcode { transform: scale(0.8); }
   .record-row { grid-template-columns: 23px minmax(0, 1fr) 28px; gap: 8px; }
   .delete-record { opacity: 0.65; }
+  .settings-about-heading { grid-template-columns: 38px minmax(0, 1fr); }
+  .settings-about-icon { width: 38px; height: 38px; }
+  .settings-about-build { grid-column: 2; justify-self: start; }
+  .settings-about-share { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 360px) {

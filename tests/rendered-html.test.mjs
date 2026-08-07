@@ -356,8 +356,11 @@ test("scanner modes constrain formats and include examples", async () => {
 });
 
 test("settings dialog stays within the mobile visual viewport", async () => {
-  const [scannerSource, stylesheet] = await Promise.all([
+  const [scannerSource, settingsSource, aboutSource, packageSource, stylesheet] = await Promise.all([
     readSource("app/components/scanner-panel.tsx"),
+    readSource("app/components/scanner-settings-dialog.tsx"),
+    readSource("app/components/settings-about.tsx"),
+    readSource("package.json"),
     readSource("app/globals.css"),
   ]);
 
@@ -369,6 +372,13 @@ test("settings dialog stays within the mobile visual viewport", async () => {
   assert.match(stylesheet, /\.settings-dialog::part\(body\)\s*\{[^}]*overflow-y: auto/s);
   assert.match(scannerSource, /placeholder="Enter a barcode"/);
   assert.doesNotMatch(scannerSource, /Enter a barcode and press Return/);
+  assert.match(settingsSource, /<SettingsAbout \/>/);
+  assert.match(aboutSource, /new URL\(window\.location\.href\)/);
+  assert.match(aboutSource, /renderSVG\(appUrl/);
+  assert.match(aboutSource, /Build \{BUILD_NUMBER\}/);
+  assert.doesNotMatch(aboutSource, /liansao-barcode-capture\.ipangbo\.chatgpt\.site/);
+  assert.match(packageSource, /"uqr": "\^0\.1\.3"/);
+  assert.match(stylesheet, /\.settings-about-share\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) auto/s);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {
