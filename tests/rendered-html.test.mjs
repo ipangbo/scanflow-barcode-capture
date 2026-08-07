@@ -88,7 +88,10 @@ test("mobile navigation separates scanning and entries without changing desktop 
   assert.match(stylesheet, /mdui-navigation-bar-item::part\(container\)\s*\{[^}]*flex-direction: row/s);
   assert.match(stylesheet, /mdui-navigation-bar-item::part\(indicator\)\s*\{[^}]*flex: 0 0 auto/s);
   assert.doesNotMatch(stylesheet, /mdui-navigation-bar-item::part\(indicator\)\s*\{[^}]*width: 32px/s);
-  assert.match(stylesheet, /height: calc\(56px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(stylesheet, /height: calc\(56px \+ max\(env\(safe-area-inset-bottom\), 8px\)\)/);
+  assert.match(stylesheet, /padding-bottom: max\(env\(safe-area-inset-bottom\), 8px\)/);
+  assert.match(stylesheet, /@media \(display-mode: standalone\) and \(max-width: 720px\)[\s\S]*height: calc\(56px \+ max\(env\(safe-area-inset-bottom\), 24px\)\)/);
+  assert.match(stylesheet, /@media \(display-mode: standalone\) and \(max-width: 720px\)[\s\S]*padding-bottom: max\(env\(safe-area-inset-bottom\), 24px\)/);
   assert.match(stylesheet, /\.workspace \{ min-height: 0; border-radius: 14px; \}/);
   assert.match(stylesheet, /\.mobile-navigation \.mobile-entry-count\s*\{/);
   assert.match(stylesheet, /\.workspace \{[\s\S]*grid-template-columns: minmax\(0, 1\.04fr\) minmax\(420px, 0\.96fr\)/);
