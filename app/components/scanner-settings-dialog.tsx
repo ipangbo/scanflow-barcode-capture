@@ -125,7 +125,7 @@ export function ScannerSettingsDialog({
             <span className="mode-icon"><Library size={20} /></span>
             <span className="mode-copy">
               <strong>ZXing JS</strong>
-              <small>Recommended for Universal and 2D · @zxing/browser</small>
+              <small>Recommended for all modes · @zxing/browser</small>
             </span>
           </label>
           <label className={recognitionEngine === "quagga" ? "is-selected" : ""}>
@@ -139,7 +139,7 @@ export function ScannerSettingsDialog({
             <span className="mode-icon"><ScanLine size={20} /></span>
             <span className="mode-copy">
               <strong>Quagga2</strong>
-              <small>Recommended for University ID · @ericblade/quagga2</small>
+              <small>Optional 1D fallback · @ericblade/quagga2</small>
             </span>
           </label>
           <label
@@ -159,12 +159,12 @@ export function ScannerSettingsDialog({
               <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
             </span>
           </label>
-          <p className={`engine-recommendation ${recognitionEngine === "quagga" && mode !== "university" ? "is-warning" : ""}`}>
+          <p className={`engine-recommendation ${recognitionEngine === "quagga" ? "is-warning" : ""}`}>
             <strong>Recommended setup</strong>
             <span>
-              {recognitionEngine === "quagga" && mode !== "university"
-                ? "Quagga2 recognizes supported 1D formats only. Use ZXing JS for QR and other 2D barcodes."
-                : "Use University ID with Quagga2 for Code 128. Use ZXing JS for Universal or any 2D barcode."}
+              {recognitionEngine === "quagga"
+                ? "Quagga2 is a slower 1D fallback. Use ZXing JS as the default, especially for University ID."
+                : "Use ZXing JS for University ID, Universal, and 2D barcodes. Quagga2 is an optional 1D fallback."}
             </span>
           </p>
         </fieldset>

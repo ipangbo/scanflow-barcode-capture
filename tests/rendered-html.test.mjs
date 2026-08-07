@@ -30,6 +30,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
   assert.match(html, /Your phone and barcode must have the same orientation/);
+  assert.doesNotMatch(html, /Portrait with portrait/);
   assert.match(html, /Entries/);
   assert.match(html, /<strong>0<\/strong> scans/);
   assert.ok(buildNumber, "build number should be readable");
@@ -134,8 +135,11 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(settingsSource, /BarcodeDetector API/);
   assert.match(settingsSource, /ZXing JS/);
   assert.match(settingsSource, /Quagga2/);
-  assert.match(settingsSource, /Recommended for University ID/);
-  assert.match(settingsSource, /Use ZXing JS for Universal or any 2D barcode/);
+  assert.match(settingsSource, /Recommended for all modes/);
+  assert.match(settingsSource, /Optional 1D fallback/);
+  assert.match(settingsSource, /slower 1D fallback/);
+  assert.match(settingsSource, /especially for University ID/);
+  assert.doesNotMatch(settingsSource, /Recommended for University ID/);
   assert.match(settingsSource, /@zxing\/browser/);
   assert.match(settingsSource, /@ericblade\/quagga2/);
   assert.match(pageSource, /recognitionEngine === "native"/);
@@ -145,6 +149,15 @@ test("scanner modes constrain formats and include examples", async () => {
   assert.match(barcodesSource, /example: "5901234123457"/);
   assert.match(barcodesSource, /example: "https:\/\/example\.edu"/);
   assert.match(scannerEnginesSource, /createHighAccuracyReader\(formatIds\)/);
+});
+
+test("settings dialog stays within the mobile visual viewport", async () => {
+  const stylesheet = await readSource("app/globals.css");
+
+  assert.match(stylesheet, /\.dialog-backdrop\s*\{[^}]*height: 100dvh/s);
+  assert.match(stylesheet, /\.dialog-backdrop\s*\{[^}]*env\(safe-area-inset-top\)/s);
+  assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*max-height: 100%/s);
+  assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*overscroll-behavior: contain/s);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {

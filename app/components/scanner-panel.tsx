@@ -125,7 +125,6 @@ export function ScannerPanel({
               {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
             </div>
             <p>Your phone and barcode must have the same orientation</p>
-            <span>Portrait with portrait · landscape with landscape</span>
           </div>
         )}
         {status === "starting" && (
