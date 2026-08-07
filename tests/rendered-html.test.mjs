@@ -181,7 +181,10 @@ test("repeat barcodes increment one aggregated entry", async () => {
 });
 
 test("local storage keys and migrations remain backward compatible", async () => {
-  const storageSource = await readSource("app/lib/storage.ts");
+  const [storageSource, pageSource] = await Promise.all([
+    readSource("app/lib/storage.ts"),
+    readSource("app/page.tsx"),
+  ]);
 
   assert.match(storageSource, /"liansao\.scans\.v1"/);
   assert.match(storageSource, /"liansao\.settings\.v1"/);
@@ -189,6 +192,8 @@ test("local storage keys and migrations remain backward compatible", async () =>
   assert.match(storageSource, /typeof record\.scanCount === "number"/);
   assert.match(storageSource, /customFormats: customFormats\.length \? customFormats : \[\.\.\.ALL_FORMAT_IDS\]/);
   assert.match(storageSource, /settings\.recognitionEngine === "native"/);
+  assert.match(storageSource, /recognitionEngine: hasExplicitRecognitionEngine \? settings\.recognitionEngine : "zxing"/);
+  assert.match(pageSource, /setRecognitionEngineConfigured\(true\)/);
 });
 
 test("TXT export contains only one barcode value per line", async () => {

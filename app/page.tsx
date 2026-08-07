@@ -94,6 +94,7 @@ export default function Home() {
   const [exportOpen, setExportOpen] = useState(false);
   const [scanMode, setScanMode] = useState<ScannerMode>("university");
   const [recognitionEngine, setRecognitionEngine] = useState<ScannerEnginePreference>("zxing");
+  const [recognitionEngineConfigured, setRecognitionEngineConfigured] = useState(false);
   const [scanModeConfigured, setScanModeConfigured] = useState(false);
   const [customFormats, setCustomFormats] = useState<BarcodeFormatId[]>(() => [
     ...ALL_FORMAT_IDS,
@@ -145,11 +146,13 @@ export default function Home() {
         }
       ).BarcodeDetector;
       const supportsNativeEngine = Boolean(NativeDetector?.getSupportedFormats);
-      const storedEngine = stored.recognitionEngine ?? (supportsNativeEngine ? "native" : "zxing");
       setNativeEngineAvailable(supportsNativeEngine);
       setRecognitionEngine(
-        storedEngine === "native" && !supportsNativeEngine ? "zxing" : storedEngine,
+        stored.recognitionEngine === "native" && !supportsNativeEngine
+          ? "zxing"
+          : stored.recognitionEngine,
       );
+      setRecognitionEngineConfigured(stored.recognitionEngineConfigured);
       activeProjectIdRef.current = stored.activeProjectId;
       setActiveProjectId(stored.activeProjectId);
     } catch {
@@ -171,6 +174,7 @@ export default function Home() {
         scanModeConfigured,
         customFormats,
         recognitionEngine,
+        recognitionEngineConfigured,
       });
     }
   }, [
@@ -181,6 +185,7 @@ export default function Home() {
     scanModeConfigured,
     customFormats,
     recognitionEngine,
+    recognitionEngineConfigured,
     hydrated,
   ]);
 
@@ -416,6 +421,7 @@ export default function Home() {
     if (wasScanning) stopScanner();
     setScanMode(draftScanMode);
     setRecognitionEngine(draftRecognitionEngine);
+    setRecognitionEngineConfigured(true);
     setScanModeConfigured(true);
     setCustomFormats([...draftCustomFormats]);
     setSettingsOpen(false);
