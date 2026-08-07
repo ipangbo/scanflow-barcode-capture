@@ -754,6 +754,16 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .format-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 720px) and (pointer: coarse) {
+  :is(
+    .manual-entry mdui-text-field,
+    .search-box,
+    .project-dialog-form mdui-text-field
+  )::part(input) {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 430px) {
   .scanner-panel, .records-panel { padding: 17px; }
   .scanner-heading { gap: 8px; }

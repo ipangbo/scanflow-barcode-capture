@@ -148,6 +148,14 @@ test("idle camera guidance stays inside the viewfinder corners", async () => {
   assert.match(stylesheet, /\.camera-placeholder p\s*\{[^}]*text-wrap: balance/s);
 });
 
+test("mobile text inputs avoid iPhone Safari focus zoom", async () => {
+  const stylesheet = await readSource("app/globals.css");
+
+  assert.match(stylesheet, /@media \(max-width: 720px\) and \(pointer: coarse\)/);
+  assert.match(stylesheet, /\.manual-entry mdui-text-field,[\s\S]*\.search-box,[\s\S]*\.project-dialog-form mdui-text-field/);
+  assert.match(stylesheet, /::part\(input\)\s*\{\s*font-size: 16px;/);
+});
+
 test("entries explain their browser-only storage risk", async () => {
   const [recordsSource, stylesheet] = await Promise.all([
     readSource("app/components/records-panel.tsx"),
