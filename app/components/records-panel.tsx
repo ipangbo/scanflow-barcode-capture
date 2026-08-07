@@ -1,5 +1,6 @@
 import {
   Check,
+  CloudOff,
   Copy,
   Download,
   Repeat2,
@@ -127,6 +128,14 @@ export function RecordsPanel({
           </div>
         )}
       </div>
+
+      <aside className="storage-note" role="note">
+        <CloudOff size={15} aria-hidden="true" />
+        <p>
+          <strong>Stored only in this browser.</strong> Entries are not saved to the cloud.
+          Clearing browser data may permanently remove them.
+        </p>
+      </aside>
     </div>
   );
 }

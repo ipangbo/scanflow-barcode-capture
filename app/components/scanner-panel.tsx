@@ -124,7 +124,7 @@ export function ScannerPanel({
             <div className="placeholder-barcode" aria-hidden="true">
               {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
             </div>
-            <p>Match phone and barcode orientation</p>
+            <p>Your phone and barcode must have the same orientation</p>
           </div>
         )}
         {status === "starting" && (

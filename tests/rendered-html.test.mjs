@@ -29,8 +29,7 @@ test("server-renders the barcode capture workspace", async () => {
   assert.match(html, /Inbox/);
   assert.match(html, /University ID/);
   assert.match(html, /Start continuous scan/);
-  assert.match(html, /Match phone and barcode orientation/);
-  assert.doesNotMatch(html, /Your phone and barcode must have the same orientation/);
+  assert.match(html, /Your phone and barcode must have the same orientation/);
   assert.doesNotMatch(html, /Portrait with portrait/);
   assert.match(html, /Entries/);
   assert.match(html, /<strong>0<\/strong> scans/);
@@ -128,9 +127,21 @@ test("idle camera guidance stays inside the viewfinder corners", async () => {
     readSource("app/globals.css"),
   ]);
 
-  assert.match(scannerPanelSource, /Match phone and barcode orientation/);
+  assert.match(scannerPanelSource, /Your phone and barcode must have the same orientation/);
   assert.match(stylesheet, /\.camera-placeholder p\s*\{[^}]*max-width:/s);
   assert.match(stylesheet, /\.camera-placeholder p\s*\{[^}]*text-wrap: balance/s);
+});
+
+test("entries explain their browser-only storage risk", async () => {
+  const [recordsSource, stylesheet] = await Promise.all([
+    readSource("app/components/records-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(recordsSource, /Stored only in this browser/);
+  assert.match(recordsSource, /not saved to the cloud/);
+  assert.match(recordsSource, /Clearing browser data may permanently remove them/);
+  assert.match(stylesheet, /\.storage-note\s*\{/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
