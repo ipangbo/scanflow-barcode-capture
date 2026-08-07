@@ -129,7 +129,7 @@ export function ScannerPanel({
         )}
         {status === "starting" && (
           <div className="camera-placeholder connecting">
-            <span className="spinner" aria-hidden="true" />
+            <mdui-circular-progress className="spinner" aria-hidden="true" />
             <p>Starting camera…</p>
           </div>
         )}
@@ -193,47 +193,48 @@ export function ScannerPanel({
 
       <div className="scanner-actions">
         {status === "scanning" ? (
-          <button className="primary-button stop-button" type="button" onClick={onStop}>
-            <X size={19} />
+          <mdui-button className="primary-button stop-button" type="button" variant="tonal" onClick={onStop}>
+            <X slot="icon" size={19} />
             Stop scanner
-          </button>
+          </mdui-button>
         ) : (
-          <button className="primary-button" type="button" onClick={onStart} disabled={status === "starting"}>
-            <Camera size={19} />
+          <mdui-button className="primary-button" type="button" variant="filled" onClick={onStart} disabled={status === "starting"} loading={status === "starting"}>
+            <Camera slot="icon" size={19} />
             {status === "starting" ? "Starting…" : "Start continuous scan"}
-          </button>
+          </mdui-button>
         )}
-        <button
+        <mdui-button-icon
           className="icon-button"
-          type="button"
+          variant="outlined"
           onClick={onToggleTorch}
           disabled={!torchAvailable || status !== "scanning"}
           aria-label={torchOn ? "Turn torch off" : "Turn torch on"}
           title={torchAvailable ? "Torch" : "Torch control is unavailable on this device"}
         >
           {torchOn ? <Lightbulb size={20} /> : <LightbulbOff size={20} />}
-        </button>
-        <button
+        </mdui-button-icon>
+        <mdui-button-icon
           className="icon-button"
-          type="button"
+          variant="outlined"
           onClick={onToggleSound}
           aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
           title={soundOn ? "Turn sound off" : "Turn sound on"}
         >
           {soundOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </button>
+        </mdui-button-icon>
       </div>
 
       <div className="feedback-row">
-        <button
-          type="button"
-          className={vibrationOn ? "is-on" : ""}
-          onClick={onToggleVibration}
-          aria-pressed={vibrationOn}
-        >
-          <span aria-hidden="true" />
-          Vibration
-        </button>
+        {/* MDUI is a form-associated custom element; the lint rule cannot infer that relationship. */}
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+        <label className="vibration-control">
+          <mdui-switch
+            checked={vibrationOn}
+            onInput={onToggleVibration}
+            aria-label="Vibration feedback"
+          />
+          <span>Vibration</span>
+        </label>
         <p><Database size={14} /> Every scan saves automatically on this device</p>
       </div>
 
@@ -250,13 +251,13 @@ export function ScannerPanel({
           <label>
             <ZoomIn size={14} />
             <span className="sr-only">Camera zoom</span>
-            <input
-              type="range"
+            <mdui-slider
               min={zoomRange.min}
               max={zoomRange.max}
               step={zoomRange.step || 0.1}
               value={zoom}
-              onChange={(event) => onZoomChange(Number(event.target.value))}
+              nolabel
+              onInput={(event) => onZoomChange(Number((event.currentTarget as HTMLElement & { value: number }).value))}
             />
             <output>{zoom.toFixed(1)}×</output>
           </label>
@@ -266,15 +267,16 @@ export function ScannerPanel({
       <form className="manual-entry" onSubmit={onManualSubmit}>
         <label htmlFor="manual-code"><Keyboard size={16} /> Manual entry</label>
         <div>
-          <input
+          <mdui-text-field
             id="manual-code"
+            variant="outlined"
             value={manualValue}
-            onChange={(event) => onManualValueChange(event.target.value)}
+            onInput={(event) => onManualValueChange((event.currentTarget as HTMLElement & { value: string }).value)}
             placeholder="Enter a barcode and press Return"
-            autoComplete="off"
-            spellCheck={false}
+            autocomplete="off"
+            spellcheck={false}
           />
-          <button type="submit" disabled={!manualValue.trim()}>Add</button>
+          <mdui-button type="submit" variant="tonal" disabled={!manualValue.trim()}>Add</mdui-button>
         </div>
       </form>
     </div>

@@ -5,6 +5,7 @@ import { FaGithub } from "react-icons/fa6";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUILD_NUMBER } from "./build-version";
+import { loadMduiComponents } from "./components/mdui-components";
 import { ExportPage } from "./components/export-page";
 import {
   EntryDeleteDialog,
@@ -128,6 +129,10 @@ export default function Home() {
     max: number;
     step: number;
   } | null>(null);
+
+  useEffect(() => {
+    void loadMduiComponents();
+  }, []);
 
   useEffect(() => {
     try {
@@ -785,28 +790,12 @@ export default function Home() {
 
   const deleteActiveProject = () => {
     if (!activeProject || projects.length === 1) return;
-    const entryCount = activeRecords.length;
-    if (
-      !window.confirm(
-        `Delete “${activeProject.name}” and its ${entryCount} ${entryCount === 1 ? "entry" : "entries"}? This can’t be undone.`,
-      )
-    ) {
-      return;
-    }
-
-    const nextProject = projects.find((project) => project.id !== activeProject.id);
-    if (!nextProject) return;
-    setProjects((current) => current.filter((project) => project.id !== activeProject.id));
-    setRecords((current) => {
-      const nextRecords = current.filter((record) => record.projectId !== activeProject.id);
-      recordsRef.current = nextRecords;
-      return nextRecords;
+    setEntryDeletePrompt({
+      kind: "project",
+      projectId: activeProject.id,
+      projectName: activeProject.name,
+      entryCount: activeRecords.length,
     });
-    activeProjectIdRef.current = nextProject.id;
-    setActiveProjectId(nextProject.id);
-    setQuery("");
-    setLastScan(null);
-    setToast("Project deleted.");
   };
 
   const submitManual = (event: FormEvent<HTMLFormElement>) => {
@@ -899,6 +888,25 @@ export default function Home() {
       return;
     }
 
+    if (entryDeletePrompt.kind === "project") {
+      const projectId = entryDeletePrompt.projectId;
+      const nextProject = projects.find((project) => project.id !== projectId);
+      if (!nextProject) return;
+      setProjects((current) => current.filter((project) => project.id !== projectId));
+      setRecords((current) => {
+        const nextRecords = current.filter((record) => record.projectId !== projectId);
+        recordsRef.current = nextRecords;
+        return nextRecords;
+      });
+      activeProjectIdRef.current = nextProject.id;
+      setActiveProjectId(nextProject.id);
+      setQuery("");
+      setLastScan(null);
+      setEntryDeletePrompt(null);
+      setToast("Project deleted.");
+      return;
+    }
+
     if (entryDeletePrompt.step !== 2) return;
     const projectId = entryDeletePrompt.projectId;
     setRecords((current) => {
@@ -927,15 +935,16 @@ export default function Home() {
           <span>ScanFlow</span>
         </a>
         <div className="topbar-actions">
-          <button
+          <mdui-button
             className="settings-trigger"
             type="button"
+            variant="filled"
             onClick={openScannerSettings}
             aria-label={`Scanner settings. Current mode: ${scannerModeLabel}`}
           >
-            <Settings size={16} />
+            <Settings slot="icon" size={16} />
             <span>{scannerModeLabel}</span>
-          </button>
+          </mdui-button>
         </div>
       </header>
 
@@ -1064,8 +1073,18 @@ export default function Home() {
         />
       )}
 
-
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && (
+        <mdui-snackbar
+          className="toast"
+          open
+          placement="bottom"
+          message-line={2}
+          auto-close-delay={2600}
+          role="status"
+        >
+          {toast}
+        </mdui-snackbar>
+      )}
     </main>
   );
 }

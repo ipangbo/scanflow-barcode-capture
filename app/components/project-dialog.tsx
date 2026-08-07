@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import type { ProjectDialogMode } from "../lib/models";
+import { MduiDialog } from "./mdui-bridge";
 
 type ProjectDialogProps = {
   mode: Exclude<ProjectDialogMode, null>;
@@ -18,47 +19,51 @@ export function ProjectDialog({
   onClose,
 }: ProjectDialogProps) {
   const isCreating = mode === "create";
+  const formId = "project-dialog-form";
 
   return (
-    <div className="dialog-backdrop" role="presentation">
+    <MduiDialog
+      className="project-dialog"
+      ariaLabelledBy="project-dialog-title"
+      onDismiss={onClose}
+    >
+      <div className="dialog-heading">
+        <div>
+          <p className="panel-kicker">Project</p>
+          <h2 id="project-dialog-title">
+            {isCreating ? "New project" : "Rename project"}
+          </h2>
+        </div>
+        <mdui-button-icon
+          className="dialog-close"
+          variant="standard"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          <X size={18} />
+        </mdui-button-icon>
+      </div>
       <form
-        className="project-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="project-dialog-title"
+        id={formId}
+        className="project-dialog-form"
         onSubmit={onSubmit}
       >
-        <div className="dialog-heading">
-          <div>
-            <p className="panel-kicker">Project</p>
-            <h2 id="project-dialog-title">
-              {isCreating ? "New project" : "Rename project"}
-            </h2>
-          </div>
-          <button
-            className="dialog-close"
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <label htmlFor="project-name">Project name</label>
-        <input
+        <mdui-text-field
           id="project-name"
+          variant="outlined"
+          label="Project name"
           value={name}
-          onChange={(event) => onNameChange(event.target.value)}
+          onInput={(event) => onNameChange((event.currentTarget as HTMLElement & { value: string }).value)}
           placeholder="e.g. August stocktake"
-          maxLength={60}
+          maxlength={60}
+          counter
+          autofocus
         />
-        <div className="dialog-actions">
-          <button type="button" onClick={onClose}>Cancel</button>
-          <button className="dialog-primary" type="submit" disabled={!name.trim()}>
-            {isCreating ? "Create project" : "Save name"}
-          </button>
-        </div>
       </form>
-    </div>
+      <mdui-button slot="action" variant="text" type="button" onClick={onClose}>Cancel</mdui-button>
+      <mdui-button slot="action" className="dialog-primary" variant="filled" type="submit" form={formId} disabled={!name.trim()}>
+        {isCreating ? "Create project" : "Save name"}
+      </mdui-button>
+    </MduiDialog>
   );
 }

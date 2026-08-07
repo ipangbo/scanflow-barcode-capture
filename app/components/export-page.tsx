@@ -34,21 +34,21 @@ export function ExportPage({
     >
       <div className="export-page-shell">
         <header className="export-page-header">
-          <button type="button" onClick={onClose}>
-            <ArrowLeft size={17} /> Back to scanner
-          </button>
+          <mdui-button type="button" variant="outlined" onClick={onClose}>
+            <ArrowLeft slot="icon" size={17} /> Back to scanner
+          </mdui-button>
           <div className="export-page-title">
             <p className="panel-kicker">Export</p>
             <h2 id="export-page-title">Share “{project.name}”</h2>
             <div className="export-page-stats" aria-label={`${entryCount} entries and ${totalScanCount} scans`}>
-              <span><strong>{entryCount}</strong> entries</span>
-              <span><strong>{totalScanCount}</strong> scans</span>
+              <mdui-chip variant="assist"><strong>{entryCount}</strong> entries</mdui-chip>
+              <mdui-chip variant="assist"><strong>{totalScanCount}</strong> scans</mdui-chip>
             </div>
           </div>
         </header>
 
         <div className="export-choice-grid">
-          <article className="export-choice">
+          <mdui-card className="export-choice" variant="outlined">
             <div className="export-choice-heading">
               <span className="export-choice-icon"><FileText size={20} /></span>
               <span className="export-extension">.TXT</span>
@@ -59,16 +59,16 @@ export function ExportPage({
               <code>U12345678<br />U87654321</code>
             </div>
             <div className="export-choice-actions">
-              <button className="is-primary" type="button" onClick={() => onDownload("txt")}>
-                <Download size={16} /> Download
-              </button>
-              <button type="button" onClick={() => onEmail("txt")}>
-                <Mail size={16} /> Email
-              </button>
+              <mdui-button className="is-primary" variant="filled" type="button" onClick={() => onDownload("txt")}>
+                <Download slot="icon" size={16} /> Download
+              </mdui-button>
+              <mdui-button variant="tonal" type="button" onClick={() => onEmail("txt")}>
+                <Mail slot="icon" size={16} /> Email
+              </mdui-button>
             </div>
-          </article>
+          </mdui-card>
 
-          <article className="export-choice">
+          <mdui-card className="export-choice" variant="outlined">
             <div className="export-choice-heading">
               <span className="export-choice-icon"><FileSpreadsheet size={20} /></span>
               <span className="export-extension">.CSV</span>
@@ -79,16 +79,16 @@ export function ExportPage({
               <code>Barcode, Format, Scan Count</code>
             </div>
             <div className="export-choice-actions">
-              <button className="is-primary" type="button" onClick={() => onDownload("csv")}>
-                <Download size={16} /> Download
-              </button>
-              <button type="button" onClick={() => onEmail("csv")}>
-                <Mail size={16} /> Email
-              </button>
+              <mdui-button className="is-primary" variant="filled" type="button" onClick={() => onDownload("csv")}>
+                <Download slot="icon" size={16} /> Download
+              </mdui-button>
+              <mdui-button variant="tonal" type="button" onClick={() => onEmail("csv")}>
+                <Mail slot="icon" size={16} /> Email
+              </mdui-button>
             </div>
-          </article>
+          </mdui-card>
 
-          <article className="export-choice">
+          <mdui-card className="export-choice" variant="outlined">
             <div className="export-choice-heading">
               <span className="export-choice-icon"><Braces size={20} /></span>
               <span className="export-extension">.JSON</span>
@@ -99,14 +99,14 @@ export function ExportPage({
               <code>{`{ "project": …, "entries": […] }`}</code>
             </div>
             <div className="export-choice-actions">
-              <button className="is-primary" type="button" onClick={() => onDownload("json")}>
-                <Download size={16} /> Download
-              </button>
-              <button type="button" onClick={() => onEmail("json")}>
-                <Mail size={16} /> Email
-              </button>
+              <mdui-button className="is-primary" variant="filled" type="button" onClick={() => onDownload("json")}>
+                <Download slot="icon" size={16} /> Download
+              </mdui-button>
+              <mdui-button variant="tonal" type="button" onClick={() => onEmail("json")}>
+                <Mail slot="icon" size={16} /> Email
+              </mdui-button>
             </div>
-          </article>
+          </mdui-card>
         </div>
 
         <div className="email-export-note">

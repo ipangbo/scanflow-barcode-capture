@@ -1,5 +1,4 @@
 import {
-  Check,
   Cpu,
   GraduationCap,
   Library,
@@ -15,6 +14,7 @@ import type {
   ScannerEnginePreference,
   ScannerMode,
 } from "../lib/models";
+import { MduiDialog } from "./mdui-bridge";
 
 type ScannerSettingsDialogProps = {
   mode: ScannerMode;
@@ -42,12 +42,13 @@ export function ScannerSettingsDialog({
   onClose,
 }: ScannerSettingsDialogProps) {
   return (
-    <div className="dialog-backdrop" role="presentation">
+    <MduiDialog
+      className="settings-dialog"
+      ariaLabelledBy="settings-dialog-title"
+      onDismiss={onClose}
+    >
       <form
-        className="settings-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-dialog-title"
+        className="settings-dialog-content"
         onSubmit={onSubmit}
       >
         <div className="dialog-heading settings-heading">
@@ -56,109 +57,93 @@ export function ScannerSettingsDialog({
             <h2 id="settings-dialog-title">Scanning settings</h2>
             <p>Choose which barcode formats the camera should look for.</p>
           </div>
-          <button
+          <mdui-button-icon
             className="dialog-close"
-            type="button"
+            variant="standard"
             onClick={onClose}
             aria-label="Close settings"
           >
             <X size={18} />
-          </button>
+          </mdui-button-icon>
         </div>
 
         <fieldset className="mode-options">
           <legend>Scanning mode</legend>
-          <label className={mode === "university" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="scan-mode"
-              value="university"
-              checked={mode === "university"}
-              onChange={() => onModeChange("university")}
-            />
-            <span className="mode-icon"><GraduationCap size={20} /></span>
-            <span className="mode-copy">
-              <strong>University ID</strong>
-              <small>Code 128 · digits only · two-frame confirmation</small>
-            </span>
-          </label>
-          <label className={mode === "universal" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="scan-mode"
-              value="universal"
-              checked={mode === "universal"}
-              onChange={() => onModeChange("universal")}
-            />
-            <span className="mode-icon"><ScanSearch size={20} /></span>
-            <span className="mode-copy">
-              <strong>Universal</strong>
-              <small>All formats supported by the selected engine</small>
-            </span>
-          </label>
-          <label className={mode === "custom" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="scan-mode"
-              value="custom"
-              checked={mode === "custom"}
-              onChange={() => onModeChange("custom")}
-            />
-            <span className="mode-icon"><SlidersHorizontal size={20} /></span>
-            <span className="mode-copy">
-              <strong>Custom</strong>
-              <small>Choose exactly which formats to recognize</small>
-            </span>
-          </label>
+          <mdui-radio-group
+            className="mode-option-grid"
+            name="scan-mode"
+            value={mode}
+            onInput={(event) => onModeChange((event.currentTarget as HTMLElement & { value: ScannerMode }).value)}
+          >
+            {/* MDUI radios are form-associated custom elements; the lint rule cannot infer them. */}
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={mode === "university" ? "is-selected" : ""}>
+              <mdui-radio value="university" aria-label="University ID" />
+              <span className="mode-icon"><GraduationCap size={20} /></span>
+              <span className="mode-copy">
+                <strong>University ID</strong>
+                <small>Code 128 · digits only · two-frame confirmation</small>
+              </span>
+            </label>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={mode === "universal" ? "is-selected" : ""}>
+              <mdui-radio value="universal" aria-label="Universal" />
+              <span className="mode-icon"><ScanSearch size={20} /></span>
+              <span className="mode-copy">
+                <strong>Universal</strong>
+                <small>All formats supported by the selected engine</small>
+              </span>
+            </label>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={mode === "custom" ? "is-selected" : ""}>
+              <mdui-radio value="custom" aria-label="Custom" />
+              <span className="mode-icon"><SlidersHorizontal size={20} /></span>
+              <span className="mode-copy">
+                <strong>Custom</strong>
+                <small>Choose exactly which formats to recognize</small>
+              </span>
+            </label>
+          </mdui-radio-group>
         </fieldset>
 
         <fieldset className="engine-options">
           <legend>Recognition engine</legend>
-          <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="recognition-engine"
-              value="zxing"
-              checked={recognitionEngine === "zxing"}
-              onChange={() => onRecognitionEngineChange("zxing")}
-            />
-            <span className="mode-icon"><Library size={20} /></span>
-            <span className="mode-copy">
-              <strong>ZXing JS</strong>
-              <small>Recommended for all modes · @zxing/browser</small>
-            </span>
-          </label>
-          <label className={recognitionEngine === "quagga" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="recognition-engine"
-              value="quagga"
-              checked={recognitionEngine === "quagga"}
-              onChange={() => onRecognitionEngineChange("quagga")}
-            />
-            <span className="mode-icon"><ScanLine size={20} /></span>
-            <span className="mode-copy">
-              <strong>Quagga2</strong>
-              <small>Optional 1D fallback · @ericblade/quagga2</small>
-            </span>
-          </label>
-          <label
-            className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
+          <mdui-radio-group
+            className="mode-option-grid"
+            name="recognition-engine"
+            value={recognitionEngine}
+            onInput={(event) => onRecognitionEngineChange((event.currentTarget as HTMLElement & { value: ScannerEnginePreference }).value)}
           >
-            <input
-              type="radio"
-              name="recognition-engine"
-              value="native"
-              checked={recognitionEngine === "native"}
-              disabled={!nativeEngineAvailable}
-              onChange={() => onRecognitionEngineChange("native")}
-            />
-            <span className="mode-icon"><Cpu size={20} /></span>
-            <span className="mode-copy">
-              <strong>BarcodeDetector API</strong>
-              <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
-            </span>
-          </label>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
+              <mdui-radio value="zxing" aria-label="ZXing JS" />
+              <span className="mode-icon"><Library size={20} /></span>
+              <span className="mode-copy">
+                <strong>ZXing JS</strong>
+                <small>Recommended for all modes · @zxing/browser</small>
+              </span>
+            </label>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={recognitionEngine === "quagga" ? "is-selected" : ""}>
+              <mdui-radio value="quagga" aria-label="Quagga2" />
+              <span className="mode-icon"><ScanLine size={20} /></span>
+              <span className="mode-copy">
+                <strong>Quagga2</strong>
+                <small>Optional 1D fallback · @ericblade/quagga2</small>
+              </span>
+            </label>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label
+              className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
+            >
+              <mdui-radio value="native" disabled={!nativeEngineAvailable} aria-label="BarcodeDetector API" />
+              <span className="mode-icon"><Cpu size={20} /></span>
+              <span className="mode-copy">
+                <strong>BarcodeDetector API</strong>
+                <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
+              </span>
+            </label>
+          </mdui-radio-group>
           <p className={`engine-recommendation ${recognitionEngine === "quagga" ? "is-warning" : ""}`}>
             <strong>Recommended setup</strong>
             <span>
@@ -183,19 +168,18 @@ export function ScannerSettingsDialog({
             {BARCODE_FORMATS.map((format) => {
               const checked = enabledFormatIds.includes(format.id);
               return (
+                // MDUI checkboxes are form-associated custom elements; the lint rule cannot infer them.
+                // eslint-disable-next-line jsx-a11y/label-has-associated-control
                 <label
                   className={`format-option ${checked ? "is-enabled" : ""}`}
                   key={format.id}
                 >
-                  <input
-                    type="checkbox"
+                  <mdui-checkbox
                     checked={checked}
                     disabled={mode !== "custom"}
-                    onChange={() => onToggleFormat(format.id)}
+                    onInput={() => onToggleFormat(format.id)}
+                    aria-label={`${format.name}: ${format.example}`}
                   />
-                  <span className="format-check" aria-hidden="true">
-                    {checked && <Check size={13} strokeWidth={3} />}
-                  </span>
                   <span className="format-copy">
                     <span><strong>{format.name}</strong><em>{format.kind}</em></span>
                     <code>{format.example}</code>
@@ -207,16 +191,17 @@ export function ScannerSettingsDialog({
         </fieldset>
 
         <div className="dialog-actions settings-actions">
-          <button type="button" onClick={onClose}>Cancel</button>
-          <button
+          <mdui-button type="button" variant="text" onClick={onClose}>Cancel</mdui-button>
+          <mdui-button
             className="dialog-primary"
+            variant="filled"
             type="submit"
             disabled={mode === "custom" && customFormats.length === 0}
           >
             Save settings
-          </button>
+          </mdui-button>
         </div>
       </form>
-    </div>
+    </MduiDialog>
   );
 }
