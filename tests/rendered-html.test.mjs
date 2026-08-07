@@ -159,7 +159,26 @@ test("entry deletion is confirmed and clear-all requires two differently ordered
   assert.match(dialogSource, /Clear all entries\?/);
   assert.match(dialogSource, /Final confirmation/);
   assert.match(dialogSource, /isFinalClear[\s\S]*Clear all[\s\S]*Cancel[\s\S]*Cancel[\s\S]*Delete/);
-  assert.match(stylesheet, /\.dialog-actions \.dialog-danger\s*\{/);
+  assert.match(stylesheet, /\.dialog-danger\s*\{/);
+});
+
+test("MDUI feedback and dialog actions use native component behavior", async () => {
+  const [pageSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-settings-dialog.tsx"),
+    readSource("app/components/entry-delete-dialog.tsx"),
+    readSource("app/components/mdui-components.ts"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(pageSource, /<mdui-snackbar/);
+  assert.doesNotMatch(pageSource, /className="toast"/);
+  assert.doesNotMatch(stylesheet, /\.toast\s*\{/);
+  assert.match(componentLoader, /components\/ripple\.js/);
+  assert.match(stylesheet, /--mdui-state-layer-pressed:/);
+  assert.match(settingsSource, /slot="action"[\s\S]*form=\{formId\}/);
+  assert.doesNotMatch(settingsSource, /settings-actions/);
+  assert.match(deleteDialogSource, /slot="action"/);
 });
 
 test("scanner modes constrain formats and include examples", async () => {
@@ -195,10 +214,11 @@ test("scanner modes constrain formats and include examples", async () => {
 test("settings dialog stays within the mobile visual viewport", async () => {
   const stylesheet = await readSource("app/globals.css");
 
-  assert.match(stylesheet, /\.dialog-backdrop\s*\{[^}]*height: 100dvh/s);
-  assert.match(stylesheet, /\.dialog-backdrop\s*\{[^}]*env\(safe-area-inset-top\)/s);
   assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*max-height: 100%/s);
   assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*overscroll-behavior: contain/s);
+  assert.match(stylesheet, /\.settings-dialog::part\(panel\)\s*\{[^}]*100dvh/s);
+  assert.match(stylesheet, /\.settings-dialog::part\(panel\)\s*\{[^}]*env\(safe-area-inset-top\)/s);
+  assert.match(stylesheet, /\.settings-dialog::part\(body\)\s*\{[^}]*overflow-y: auto/s);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {

@@ -36,7 +36,7 @@ export function ProjectDialog({
         </div>
         <mdui-button-icon
           className="dialog-close"
-          variant="standard"
+          variant="outlined"
           onClick={onClose}
           aria-label="Close dialog"
         >

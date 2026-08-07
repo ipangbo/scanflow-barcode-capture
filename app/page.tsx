@@ -1075,7 +1075,6 @@ export default function Home() {
 
       {toast && (
         <mdui-snackbar
-          className="toast"
           open
           placement="bottom"
           message-line={2}

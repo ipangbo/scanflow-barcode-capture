@@ -110,7 +110,7 @@ export function RecordsPanel({
               </div>
               <mdui-button-icon
                 className="delete-record"
-                variant="standard"
+                variant="outlined"
                 onClick={() => onDelete(record.id)}
                 aria-label={`Delete barcode ${record.value}`}
               >

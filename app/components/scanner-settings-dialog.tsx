@@ -41,6 +41,8 @@ export function ScannerSettingsDialog({
   onSubmit,
   onClose,
 }: ScannerSettingsDialogProps) {
+  const formId = "scanner-settings-form";
+
   return (
     <MduiDialog
       className="settings-dialog"
@@ -48,6 +50,7 @@ export function ScannerSettingsDialog({
       onDismiss={onClose}
     >
       <form
+        id={formId}
         className="settings-dialog-content"
         onSubmit={onSubmit}
       >
@@ -59,7 +62,7 @@ export function ScannerSettingsDialog({
           </div>
           <mdui-button-icon
             className="dialog-close"
-            variant="standard"
+            variant="outlined"
             onClick={onClose}
             aria-label="Close settings"
           >
@@ -75,34 +78,36 @@ export function ScannerSettingsDialog({
             value={mode}
             onInput={(event) => onModeChange((event.currentTarget as HTMLElement & { value: ScannerMode }).value)}
           >
-            {/* MDUI radios are form-associated custom elements; the lint rule cannot infer them. */}
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={mode === "university" ? "is-selected" : ""}>
-              <mdui-radio value="university" aria-label="University ID" />
-              <span className="mode-icon"><GraduationCap size={20} /></span>
-              <span className="mode-copy">
-                <strong>University ID</strong>
-                <small>Code 128 · digits only · two-frame confirmation</small>
-              </span>
-            </label>
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={mode === "universal" ? "is-selected" : ""}>
-              <mdui-radio value="universal" aria-label="Universal" />
-              <span className="mode-icon"><ScanSearch size={20} /></span>
-              <span className="mode-copy">
-                <strong>Universal</strong>
-                <small>All formats supported by the selected engine</small>
-              </span>
-            </label>
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={mode === "custom" ? "is-selected" : ""}>
-              <mdui-radio value="custom" aria-label="Custom" />
-              <span className="mode-icon"><SlidersHorizontal size={20} /></span>
-              <span className="mode-copy">
-                <strong>Custom</strong>
-                <small>Choose exactly which formats to recognize</small>
-              </span>
-            </label>
+            <div className="mode-option-grid-inner">
+              {/* MDUI radios are form-associated custom elements; the lint rule cannot infer them. */}
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label className={mode === "university" ? "is-selected" : ""} onClick={() => onModeChange("university")}>
+                <mdui-radio value="university" aria-label="University ID" />
+                <span className="mode-icon"><GraduationCap size={20} /></span>
+                <span className="mode-copy">
+                  <strong>University ID</strong>
+                  <small>Code 128 · digits only · two-frame confirmation</small>
+                </span>
+              </label>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label className={mode === "universal" ? "is-selected" : ""} onClick={() => onModeChange("universal")}>
+                <mdui-radio value="universal" aria-label="Universal" />
+                <span className="mode-icon"><ScanSearch size={20} /></span>
+                <span className="mode-copy">
+                  <strong>Universal</strong>
+                  <small>All formats supported by the selected engine</small>
+                </span>
+              </label>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label className={mode === "custom" ? "is-selected" : ""} onClick={() => onModeChange("custom")}>
+                <mdui-radio value="custom" aria-label="Custom" />
+                <span className="mode-icon"><SlidersHorizontal size={20} /></span>
+                <span className="mode-copy">
+                  <strong>Custom</strong>
+                  <small>Choose exactly which formats to recognize</small>
+                </span>
+              </label>
+            </div>
           </mdui-radio-group>
         </fieldset>
 
@@ -114,35 +119,40 @@ export function ScannerSettingsDialog({
             value={recognitionEngine}
             onInput={(event) => onRecognitionEngineChange((event.currentTarget as HTMLElement & { value: ScannerEnginePreference }).value)}
           >
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={recognitionEngine === "zxing" ? "is-selected" : ""}>
-              <mdui-radio value="zxing" aria-label="ZXing JS" />
-              <span className="mode-icon"><Library size={20} /></span>
-              <span className="mode-copy">
-                <strong>ZXing JS</strong>
-                <small>Recommended for all modes · @zxing/browser</small>
-              </span>
-            </label>
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={recognitionEngine === "quagga" ? "is-selected" : ""}>
-              <mdui-radio value="quagga" aria-label="Quagga2" />
-              <span className="mode-icon"><ScanLine size={20} /></span>
-              <span className="mode-copy">
-                <strong>Quagga2</strong>
-                <small>Optional 1D fallback · @ericblade/quagga2</small>
-              </span>
-            </label>
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label
-              className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
-            >
-              <mdui-radio value="native" disabled={!nativeEngineAvailable} aria-label="BarcodeDetector API" />
-              <span className="mode-icon"><Cpu size={20} /></span>
-              <span className="mode-copy">
-                <strong>BarcodeDetector API</strong>
-                <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
-              </span>
-            </label>
+            <div className="mode-option-grid-inner">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label className={recognitionEngine === "zxing" ? "is-selected" : ""} onClick={() => onRecognitionEngineChange("zxing")}>
+                <mdui-radio value="zxing" aria-label="ZXing JS" />
+                <span className="mode-icon"><Library size={20} /></span>
+                <span className="mode-copy">
+                  <strong>ZXing JS</strong>
+                  <small>Recommended for all modes · @zxing/browser</small>
+                </span>
+              </label>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label className={recognitionEngine === "quagga" ? "is-selected" : ""} onClick={() => onRecognitionEngineChange("quagga")}>
+                <mdui-radio value="quagga" aria-label="Quagga2" />
+                <span className="mode-icon"><ScanLine size={20} /></span>
+                <span className="mode-copy">
+                  <strong>Quagga2</strong>
+                  <small>Optional 1D fallback · @ericblade/quagga2</small>
+                </span>
+              </label>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+              <label
+                className={`${recognitionEngine === "native" ? "is-selected" : ""} ${nativeEngineAvailable ? "" : "is-disabled"}`}
+                onClick={() => {
+                  if (nativeEngineAvailable) onRecognitionEngineChange("native");
+                }}
+              >
+                <mdui-radio value="native" disabled={!nativeEngineAvailable} aria-label="BarcodeDetector API" />
+                <span className="mode-icon"><Cpu size={20} /></span>
+                <span className="mode-copy">
+                  <strong>BarcodeDetector API</strong>
+                  <small>{nativeEngineAvailable ? "Browser-native engine" : "Unavailable in this browser"}</small>
+                </span>
+              </label>
+            </div>
           </mdui-radio-group>
           <p className={`engine-recommendation ${recognitionEngine === "quagga" ? "is-warning" : ""}`}>
             <strong>Recommended setup</strong>
@@ -169,10 +179,15 @@ export function ScannerSettingsDialog({
               const checked = enabledFormatIds.includes(format.id);
               return (
                 // MDUI checkboxes are form-associated custom elements; the lint rule cannot infer them.
-                // eslint-disable-next-line jsx-a11y/label-has-associated-control
+                // eslint-disable-next-line jsx-a11y/label-has-associated-control, jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
                 <label
                   className={`format-option ${checked ? "is-enabled" : ""}`}
                   key={format.id}
+                  onClick={(event) => {
+                    if (mode !== "custom" || (event.target as Element).closest("mdui-checkbox")) return;
+                    event.preventDefault();
+                    onToggleFormat(format.id);
+                  }}
                 >
                   <mdui-checkbox
                     checked={checked}
@@ -190,18 +205,18 @@ export function ScannerSettingsDialog({
           </div>
         </fieldset>
 
-        <div className="dialog-actions settings-actions">
-          <mdui-button type="button" variant="text" onClick={onClose}>Cancel</mdui-button>
-          <mdui-button
-            className="dialog-primary"
-            variant="filled"
-            type="submit"
-            disabled={mode === "custom" && customFormats.length === 0}
-          >
-            Save settings
-          </mdui-button>
-        </div>
       </form>
+      <mdui-button slot="action" type="button" variant="text" onClick={onClose}>Cancel</mdui-button>
+      <mdui-button
+        slot="action"
+        className="dialog-primary"
+        variant="filled"
+        type="submit"
+        form={formId}
+        disabled={mode === "custom" && customFormats.length === 0}
+      >
+        Save settings
+      </mdui-button>
     </MduiDialog>
   );
 }

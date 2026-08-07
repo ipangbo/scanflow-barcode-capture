@@ -58,7 +58,7 @@ export function EntryDeleteDialog({
           </div>
           <mdui-button-icon
             className="dialog-close"
-            variant="standard"
+            variant="outlined"
             onClick={onCancel}
             aria-label="Cancel deletion"
           >
@@ -89,28 +89,27 @@ export function EntryDeleteDialog({
           )}
         </div>
 
-        <div className={`dialog-actions confirm-actions ${isFinalClear ? "is-reversed" : ""}`}>
-          {isFinalClear ? (
-            <>
-              <mdui-button className="dialog-danger" variant="filled" type="button" onClick={onConfirm}>
-                <Trash2 slot="icon" size={15} /> Clear all
-              </mdui-button>
-              <mdui-button variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
-            </>
-          ) : (
-            <>
-              <mdui-button variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
-              <mdui-button
-                className="dialog-danger"
-                variant="filled"
-                type="button"
-                onClick={isSingle || isProject ? onConfirm : onContinue}
-              >
-                {isSingle || isProject ? <><Trash2 slot="icon" size={15} /> Delete</> : "Continue"}
-              </mdui-button>
-            </>
-          )}
-        </div>
+        {isFinalClear ? (
+          <>
+            <mdui-button slot="action" className="dialog-danger" variant="filled" type="button" onClick={onConfirm}>
+              <Trash2 slot="icon" size={15} /> Clear all
+            </mdui-button>
+            <mdui-button slot="action" variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
+          </>
+        ) : (
+          <>
+            <mdui-button slot="action" variant="text" type="button" onClick={onCancel}>Cancel</mdui-button>
+            <mdui-button
+              slot="action"
+              className="dialog-danger"
+              variant="filled"
+              type="button"
+              onClick={isSingle || isProject ? onConfirm : onContinue}
+            >
+              {isSingle || isProject ? <><Trash2 slot="icon" size={15} /> Delete</> : "Continue"}
+            </mdui-button>
+          </>
+        )}
     </MduiDialog>
   );
 }
