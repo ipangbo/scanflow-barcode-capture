@@ -54,7 +54,7 @@ export function ProjectDialog({
           label="Project name"
           value={name}
           onInput={(event) => onNameChange((event.currentTarget as HTMLElement & { value: string }).value)}
-          placeholder="e.g. August stocktake"
+          placeholder="e.g. Tutorial Week 3"
           maxlength={60}
           counter
           autofocus

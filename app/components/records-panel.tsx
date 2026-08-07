@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { normalizeFormat } from "../lib/barcodes";
 import type { ScanRecord } from "../lib/models";
-import { HoverTooltip } from "./hover-tooltip";
+import { ActionTooltip } from "./action-tooltip";
 
 type RecordsPanelProps = {
   activeRecords: ScanRecord[];
@@ -118,7 +118,7 @@ export function RecordsPanel({
                   </time>
                 </div>
               </div>
-              <HoverTooltip content="Delete entry" placement="left">
+              <ActionTooltip content="Delete entry" placement="left">
                 <mdui-button-icon
                   className="delete-record"
                   variant="outlined"
@@ -127,7 +127,7 @@ export function RecordsPanel({
                 >
                   <Trash2 size={16} />
                 </mdui-button-icon>
-              </HoverTooltip>
+              </ActionTooltip>
             </mdui-card>
           ))
         ) : (

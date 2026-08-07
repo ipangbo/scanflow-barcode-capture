@@ -416,7 +416,8 @@ mdui-button, mdui-button-icon {
 .camera-error { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; padding: 11px 13px; border: 1px solid rgba(255, 115, 86, 0.28); border-radius: 10px; color: #ffad9a; background: rgba(255, 115, 86, 0.07); font-size: 12px; line-height: 1.5; }
 .camera-error svg { flex: 0 0 auto; margin-top: 1px; }
 
-.scanner-actions { display: grid; grid-template-columns: minmax(0, 1fr) 48px 48px; gap: 10px; margin-top: 16px; }
+.scanner-actions { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 48px); gap: 10px; margin-top: 16px; }
+.scanner-actions > mdui-tooltip { display: block; width: 48px; height: 48px; }
 .primary-button, .icon-button {
   --shape-corner: 11px;
   min-height: 48px;
@@ -426,12 +427,8 @@ mdui-button, mdui-button-icon {
 .primary-button::part(button) { padding-inline: 10px; }
 .primary-button::part(label) { padding-inline: 3px; white-space: nowrap; }
 .icon-button { --mdui-color-primary: 201, 244, 93; --mdui-color-on-surface: 227, 230, 223; --mdui-color-on-surface-variant: 227, 230, 223; --mdui-color-outline: 74, 78, 69; width: 48px; color: #e3e6df; }
+.icon-button.is-active { --mdui-color-outline: 111, 135, 53; background: rgba(201, 244, 93, 0.09); color: var(--lime); }
 .primary-button[disabled], .icon-button[disabled] { cursor: not-allowed; }
-
-.feedback-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 12px; }
-.vibration-control { display: inline-flex; align-items: center; gap: 8px; color: #c8ccc3; cursor: pointer; font-size: 12px; }
-.vibration-control mdui-switch { --mdui-color-primary: 201, 244, 93; --mdui-color-on-primary: 23, 25, 22; --mdui-color-outline: 118, 124, 112; margin-right: -8px; transform: scale(0.82); transform-origin: left center; }
-.feedback-row p { display: flex; align-items: center; gap: 6px; margin: 0; color: #6f746a; font-size: 11px; }
 
 .quality-controls {
   display: flex;
@@ -559,7 +556,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .settings-heading > div > p:last-child { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .dialog-close { --mdui-color-outline: 216, 217, 208; --shape-corner: 9px; flex: 0 0 auto; width: 36px; height: 36px; color: var(--muted); cursor: pointer; }
 .project-dialog-form { margin-top: 25px; }
-.project-dialog-form mdui-text-field { --shape-corner: 10px; width: 100%; }
+.project-dialog-form mdui-text-field { --mdui-color-background: 251, 250, 245; --shape-corner: 10px; width: 100%; }
 :is(.project-dialog, .settings-dialog) > mdui-button[slot="action"] { --shape-corner: 9px; min-height: 40px; cursor: pointer; font-size: 12px; font-weight: 700; }
 .dialog-primary { --mdui-color-primary: 23, 25, 22; --mdui-color-on-primary: 251, 250, 245; }
 .dialog-danger { --mdui-color-primary: 255, 115, 86; --mdui-color-on-primary: 40, 23, 19; }
@@ -671,8 +668,6 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .camera-stage { aspect-ratio: 4 / 3; }
   .scan-frame { inset: 17% 9%; }
   .camera-placeholder p { max-width: calc(82% - 48px); font-size: 13px; }
-  .feedback-row { align-items: flex-start; }
-  .feedback-row p { max-width: 170px; text-align: right; line-height: 1.4; }
   .quality-controls { align-items: flex-start; flex-direction: column; }
   .quality-controls label, .zoom-controls { width: 100%; }
   .zoom-presets { justify-content: flex-start; flex-wrap: wrap; }
@@ -707,7 +702,8 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .scan-frame-status { top: 8px; padding: 6px 9px; font-size: 10px; }
   .capture-confirmation { bottom: 12px; min-width: 158px; padding: 11px 14px; }
   .capture-confirmation strong { max-width: 230px; font-size: 13px; }
-  .scanner-actions { grid-template-columns: minmax(0, 1fr) 44px 44px; }
+  .scanner-actions { grid-template-columns: minmax(0, 1fr) repeat(3, 44px); }
+  .scanner-actions > mdui-tooltip { width: 44px; height: 46px; }
   .primary-button { font-size: 12px; }
   .primary-button::part(button) { padding-inline: 6px; }
   .primary-button::part(label) { padding-inline: 2px; }
@@ -718,6 +714,9 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 }
 
 @media (max-width: 360px) {
+  .scanner-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .scanner-actions .primary-button { grid-column: 1 / -1; }
+  .scanner-actions > mdui-tooltip, .scanner-actions .icon-button { width: 100%; }
   .primary-button::part(button) { padding-inline: 2px; }
   .primary-button::part(label) { padding-inline: 0; }
 }

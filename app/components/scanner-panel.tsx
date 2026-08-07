@@ -1,12 +1,13 @@
 import {
   Camera,
   Check,
-  Database,
   Focus,
   Keyboard,
   Lightbulb,
   LightbulbOff,
   Repeat2,
+  Vibrate,
+  VibrateOff,
   Volume2,
   VolumeX,
   X,
@@ -22,6 +23,7 @@ import {
   type ScannerStatus,
 } from "../lib/models";
 import { ScanCounter } from "./scan-counter";
+import { ActionTooltip } from "./action-tooltip";
 
 const ZOOM_PRESETS = [0.9, 1, 1.2, 1.5, 2, 3] as const;
 
@@ -208,39 +210,43 @@ export function ScannerPanel({
             {status === "starting" ? "Starting…" : "Start continuous scan"}
           </mdui-button>
         )}
-        <mdui-button-icon
-          className="icon-button"
-          variant="outlined"
-          onClick={onToggleTorch}
-          disabled={!torchAvailable || status !== "scanning"}
-          aria-label={torchOn ? "Turn torch off" : "Turn torch on"}
-          title={torchAvailable ? "Torch" : "Torch control is unavailable on this device"}
+        <ActionTooltip
+          content={torchAvailable ? (torchOn ? "Turn torch off" : "Turn torch on") : "Torch unavailable"}
+          placement="bottom"
         >
-          {torchOn ? <Lightbulb size={20} /> : <LightbulbOff size={20} />}
-        </mdui-button-icon>
-        <mdui-button-icon
-          className="icon-button"
-          variant="outlined"
-          onClick={onToggleSound}
-          aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
-          title={soundOn ? "Turn sound off" : "Turn sound on"}
-        >
-          {soundOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </mdui-button-icon>
-      </div>
-
-      <div className="feedback-row">
-        {/* MDUI is a form-associated custom element; the lint rule cannot infer that relationship. */}
-        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-        <label className="vibration-control">
-          <mdui-switch
-            checked={vibrationOn}
-            onInput={onToggleVibration}
-            aria-label="Vibration feedback"
-          />
-          <span>Vibration</span>
-        </label>
-        <p><Database size={14} /> Every scan saves automatically on this device</p>
+          <mdui-button-icon
+            className={`icon-button ${torchOn ? "is-active" : ""}`}
+            variant="outlined"
+            onClick={onToggleTorch}
+            disabled={!torchAvailable || status !== "scanning"}
+            aria-label={torchOn ? "Turn torch off" : "Turn torch on"}
+            aria-pressed={torchOn}
+          >
+            {torchOn ? <Lightbulb size={20} /> : <LightbulbOff size={20} />}
+          </mdui-button-icon>
+        </ActionTooltip>
+        <ActionTooltip content={vibrationOn ? "Turn vibration off" : "Turn vibration on"} placement="bottom">
+          <mdui-button-icon
+            className={`icon-button ${vibrationOn ? "is-active" : ""}`}
+            variant="outlined"
+            onClick={onToggleVibration}
+            aria-label={vibrationOn ? "Turn vibration off" : "Turn vibration on"}
+            aria-pressed={vibrationOn}
+          >
+            {vibrationOn ? <Vibrate size={20} /> : <VibrateOff size={20} />}
+          </mdui-button-icon>
+        </ActionTooltip>
+        <ActionTooltip content={soundOn ? "Turn sound off" : "Turn sound on"} placement="bottom">
+          <mdui-button-icon
+            className={`icon-button ${soundOn ? "is-active" : ""}`}
+            variant="outlined"
+            onClick={onToggleSound}
+            aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+            aria-pressed={soundOn}
+          >
+            {soundOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </mdui-button-icon>
+        </ActionTooltip>
       </div>
 
       <div className="quality-controls">

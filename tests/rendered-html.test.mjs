@@ -166,7 +166,7 @@ test("entry deletion is confirmed and clear-all requires two differently ordered
 test("MDUI feedback, motion, and dialog actions use native component behavior", async () => {
   const [pageSource, tooltipSource, projectBarSource, recordsSource, settingsSource, deleteDialogSource, componentLoader, stylesheet] = await Promise.all([
     readSource("app/page.tsx"),
-    readSource("app/components/hover-tooltip.tsx"),
+    readSource("app/components/action-tooltip.tsx"),
     readSource("app/components/project-bar.tsx"),
     readSource("app/components/records-panel.tsx"),
     readSource("app/components/scanner-settings-dialog.tsx"),
@@ -186,15 +186,38 @@ test("MDUI feedback, motion, and dialog actions use native component behavior", 
   assert.doesNotMatch(projectBarSource, /project-create[\s\S]*variant="tonal"/);
   assert.match(recordsSource, /slot="end-icon"/);
   assert.match(recordsSource, /<Repeat2 slot="icon"/);
-  assert.match(pageSource, /<HoverTooltip/);
+  assert.match(pageSource, /<ActionTooltip/);
   assert.match(tooltipSource, /\(hover: hover\) and \(pointer: fine\)/);
   assert.match(tooltipSource, /customElements\.whenDefined\("mdui-tooltip"\)/);
   assert.match(tooltipSource, /trigger=\{supportsHover === true \? "hover" : "manual"\}/);
-  assert.match(tooltipSource, /if \(!supportsHover\) tooltip\.open = false/);
+  assert.match(tooltipSource, /LONG_PRESS_DELAY_MS = 520/);
+  assert.match(tooltipSource, /longPressTriggered = true/);
+  assert.match(tooltipSource, /addEventListener\("pointerdown", handlePointerDown\)/);
+  assert.match(tooltipSource, /addEventListener\("click", handleClick, true\)/);
+  assert.match(tooltipSource, /event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\)/);
   assert.doesNotMatch(tooltipSource, /trigger="hover focus"/);
   assert.match(settingsSource, /slot="action"[\s\S]*form=\{formId\}/);
   assert.doesNotMatch(settingsSource, /settings-actions/);
   assert.match(deleteDialogSource, /slot="action"/);
+});
+
+test("project dialog and scanner feedback controls match the mobile interaction design", async () => {
+  const [dialogSource, scannerSource, componentLoader, stylesheet] = await Promise.all([
+    readSource("app/components/project-dialog.tsx"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/components/mdui-components.ts"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(dialogSource, /placeholder="e\.g\. Tutorial Week 3"/);
+  assert.match(stylesheet, /\.project-dialog-form mdui-text-field \{ --mdui-color-background: 251, 250, 245;/);
+  assert.doesNotMatch(scannerSource, /Every scan saves automatically on this device/);
+  assert.doesNotMatch(scannerSource, /<mdui-switch/);
+  assert.doesNotMatch(componentLoader, /components\/switch\.js/);
+  assert.match(scannerSource, /<Vibrate size=\{20\}/);
+  assert.match(scannerSource, /Turn vibration off/);
+  assert.match(scannerSource, /aria-pressed=\{vibrationOn\}/);
+  assert.match(stylesheet, /repeat\(3, 48px\)/);
 });
 
 test("camera zoom offers supported common presets and fine control", async () => {

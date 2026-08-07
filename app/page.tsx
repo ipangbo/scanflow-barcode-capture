@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUILD_NUMBER } from "./build-version";
 import { loadMduiComponents } from "./components/mdui-components";
 import { ExportPage } from "./components/export-page";
-import { HoverTooltip } from "./components/hover-tooltip";
+import { ActionTooltip } from "./components/action-tooltip";
 import {
   EntryDeleteDialog,
   type EntryDeletePrompt,
@@ -936,7 +936,7 @@ export default function Home() {
           <span>ScanFlow</span>
         </a>
         <div className="topbar-actions">
-          <HoverTooltip content={`Scanner settings · ${scannerModeLabel}`} placement="bottom-end">
+          <ActionTooltip content={`Scanner settings · ${scannerModeLabel}`} placement="bottom-end">
             <mdui-button-icon
               className="settings-trigger"
               variant="filled"
@@ -945,7 +945,7 @@ export default function Home() {
             >
               <Settings size={17} />
             </mdui-button-icon>
-          </HoverTooltip>
+          </ActionTooltip>
         </div>
       </header>
 
