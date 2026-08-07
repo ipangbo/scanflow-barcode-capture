@@ -703,7 +703,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .project-switcher { gap: 0; }
   .project-label { display: none; }
   .project-select { width: 100%; min-width: 0; height: 40px; }
-  .workspace { min-height: calc(100vh - 118px); border-radius: 14px; }
+  .workspace { min-height: 0; border-radius: 14px; }
   .scanner-panel, .records-panel { padding: 16px; }
   .workspace > .mobile-view-inactive { display: none; }
   .workspace > .mobile-view-active { animation: mobile-view-in var(--mdui-motion-duration-medium2) var(--mdui-motion-easing-emphasized-decelerate); }
@@ -732,7 +732,16 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   }
   .mobile-navigation mdui-navigation-bar-item::part(indicator) { flex: 0 0 32px; width: 32px; height: 32px; }
   .mobile-navigation mdui-navigation-bar-item::part(label) { height: auto; margin: 0; font-size: 12px; font-weight: 720; line-height: 1; }
-  .mobile-navigation mdui-badge { --mdui-color-error: 23, 25, 22; --mdui-color-on-error: 201, 244, 93; }
+  .mobile-navigation .mobile-entry-count {
+    --mdui-color-error: 231, 235, 218;
+    --mdui-color-on-error: 79, 91, 50;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 2px;
+    padding-inline: 5px;
+    font-size: 10px;
+    font-weight: 800;
+  }
   .camera-stage { --scan-frame-block-inset: 17%; --scan-frame-inline-inset: 9%; aspect-ratio: 4 / 3; }
   .camera-placeholder p { max-width: calc(82% - 48px); font-size: 13px; }
   .quality-controls { align-items: flex-start; flex-direction: column; }

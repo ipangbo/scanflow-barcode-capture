@@ -60,8 +60,8 @@ export function MobileNavigation({
       <mdui-navigation-bar-item value="entries" aria-label={`Entries, ${entryCount}`}>
         <List slot="icon" size={22} aria-hidden="true" />
         <List slot="active-icon" size={22} strokeWidth={2.7} aria-hidden="true" />
-        {entryCount > 0 && <mdui-badge slot="badge">{entryCount > 99 ? "99+" : entryCount}</mdui-badge>}
         Entries
+        {entryCount > 0 && <mdui-badge className="mobile-entry-count">{entryCount > 99 ? "99+" : entryCount}</mdui-badge>}
       </mdui-navigation-bar-item>
     </mdui-navigation-bar>
   );
