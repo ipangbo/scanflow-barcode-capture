@@ -35,6 +35,7 @@ type ZoomRange = {
 
 type ScannerPanelProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
+  ambientVideoRef: RefObject<HTMLVideoElement | null>;
   frameRef: RefObject<HTMLDivElement | null>;
   status: ScannerStatus;
   engine: ScannerEngine;
@@ -63,6 +64,7 @@ type ScannerPanelProps = {
 
 export function ScannerPanel({
   videoRef,
+  ambientVideoRef,
   frameRef,
   status,
   engine,
@@ -101,7 +103,17 @@ export function ScannerPanel({
     : [];
 
   return (
-    <div className="scanner-panel">
+    <div className={`scanner-panel ${status === "scanning" ? "is-camera-live" : ""}`}>
+      <video
+        ref={ambientVideoRef}
+        className="scanner-ambient-video"
+        muted
+        playsInline
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <div className="scanner-ambient-scrim" aria-hidden="true" />
+
       <div className="panel-heading scanner-heading">
         <div>
           <h2>Viewfinder</h2>
@@ -140,6 +152,7 @@ export function ScannerPanel({
             <p>Starting camera…</p>
           </div>
         )}
+        {status === "scanning" && <div className="scan-area-mask" aria-hidden="true" />}
         <div
           className={`scan-frame ${scanCue ? `is-${scanCue.kind}` : ""}`}
           aria-hidden="true"

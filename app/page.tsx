@@ -73,6 +73,7 @@ import {
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ambientVideoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const decoderRef = useRef<ScannerFrameDecoder | null>(null);
@@ -393,6 +394,7 @@ export default function Home() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    if (ambientVideoRef.current) ambientVideoRef.current.srcObject = null;
     decoderRef.current?.dispose();
     decoderRef.current = null;
     setTorchOn(false);
@@ -511,6 +513,12 @@ export default function Home() {
       if (!video) throw new Error("Video preview is unavailable");
       video.srcObject = stream;
       await video.play();
+      if (ambientVideoRef.current) {
+        ambientVideoRef.current.srcObject = stream;
+        void ambientVideoRef.current.play().catch(() => {
+          // The primary viewfinder remains available if a browser declines the ambient preview.
+        });
+      }
 
       const track = stream.getVideoTracks()[0];
       if (!track) throw new Error("Camera track is unavailable");
@@ -658,6 +666,7 @@ export default function Home() {
                   streamRef.current?.getTracks().forEach((streamTrack) => streamTrack.stop());
                   streamRef.current = null;
                   if (videoRef.current) videoRef.current.srcObject = null;
+                  if (ambientVideoRef.current) ambientVideoRef.current.srcObject = null;
                   frameDecoder.dispose();
                   decoderRef.current = null;
                   setEngine(null);
@@ -682,6 +691,7 @@ export default function Home() {
       frameDecoder.dispose();
       decoderRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
+      if (ambientVideoRef.current) ambientVideoRef.current.srcObject = null;
       setDetectionRegion(null);
       setCameraError(friendlyCameraError(error));
       setStatus("error");
@@ -961,6 +971,7 @@ export default function Home() {
       <section className="workspace" aria-label="Barcode capture workspace">
         <ScannerPanel
           videoRef={videoRef}
+          ambientVideoRef={ambientVideoRef}
           frameRef={frameRef}
           status={status}
           engine={engine}

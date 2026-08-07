@@ -122,6 +122,21 @@ test("successful scans render their detected barcode region", async () => {
   assert.match(stylesheet, /\.detected-region\s*\{/);
 });
 
+test("live scanning extends a masked camera preview beyond the recognition frame", async () => {
+  const [pageSource, scannerPanelSource, stylesheet] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.match(pageSource, /ambientVideoRef\.current\.srcObject = stream/);
+  assert.match(scannerPanelSource, /className="scanner-ambient-video"/);
+  assert.match(scannerPanelSource, /className="scan-area-mask"/);
+  assert.match(stylesheet, /\.scanner-panel\.is-camera-live \.scanner-ambient-video/);
+  assert.match(stylesheet, /\.scan-area-mask\s*\{[^}]*100vmax/s);
+  assert.match(stylesheet, /\.scan-frame\s*\{[^}]*var\(--scan-frame-block-inset\)/s);
+});
+
 test("idle camera guidance stays inside the viewfinder corners", async () => {
   const [scannerPanelSource, stylesheet] = await Promise.all([
     readSource("app/components/scanner-panel.tsx"),
