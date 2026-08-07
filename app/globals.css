@@ -730,7 +730,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
     gap: 8px;
     padding: 8px 16px;
   }
-  .mobile-navigation mdui-navigation-bar-item::part(indicator) { flex: 0 0 32px; width: 32px; height: 32px; }
+  .mobile-navigation mdui-navigation-bar-item::part(indicator) { flex: 0 0 auto; height: 32px; }
   .mobile-navigation mdui-navigation-bar-item::part(label) { height: auto; margin: 0; font-size: 12px; font-weight: 720; line-height: 1; }
   .mobile-navigation .mobile-entry-count {
     --mdui-color-error: 231, 235, 218;
