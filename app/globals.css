@@ -578,7 +578,7 @@ footer span { font-family: var(--font-geist-mono), monospace; }
 .email-export-note span { margin-top: 3px; color: #7a8163; font-size: 10px; }
 
 .project-dialog { --shape-corner: 17px; --z-index: 40; }
-.settings-dialog { --shape-corner: 17px; --z-index: 40; max-height: 100%; overscroll-behavior: contain; }
+.settings-dialog { --shape-corner: 17px; --z-index: 100; max-height: 100%; overscroll-behavior: contain; }
 :is(.project-dialog, .settings-dialog)::part(overlay) { background: rgba(23, 25, 22, 0.48); backdrop-filter: blur(5px); }
 :is(.project-dialog, .settings-dialog)::part(panel) { padding: 0; overflow: hidden; border: 1px solid rgba(23, 25, 22, 0.25); background: var(--surface); box-shadow: 0 26px 80px rgba(0, 0, 0, 0.22); }
 .project-dialog::part(panel) { width: min(430px, calc(100vw - 40px)); max-width: min(430px, calc(100vw - 40px)); }
@@ -730,7 +730,23 @@ footer span { font-family: var(--font-geist-mono), monospace; }
     gap: 8px;
     padding: 8px 16px;
   }
-  .mobile-navigation mdui-navigation-bar-item::part(indicator) { flex: 0 0 auto; height: 32px; }
+  .mobile-navigation mdui-navigation-bar-item {
+    --mdui-state-layer-hover: 0;
+    --mdui-state-layer-focus: 0;
+    --mdui-state-layer-pressed: 0;
+  }
+  .mobile-navigation mdui-navigation-bar-item::part(indicator) {
+    flex: 0 0 auto;
+    height: 32px;
+    transition:
+      background-color var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard),
+      box-shadow var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard),
+      transform var(--mdui-motion-duration-short2) var(--mdui-motion-easing-standard);
+  }
+  .mobile-navigation mdui-navigation-bar-item:focus-visible::part(indicator) {
+    box-shadow: inset 0 0 0 2px rgba(89, 94, 84, 0.2);
+  }
+  .mobile-navigation mdui-navigation-bar-item[pressed]::part(indicator) { transform: scale(0.92); }
   .mobile-navigation mdui-navigation-bar-item::part(label) { height: auto; margin: 0; font-size: 12px; font-weight: 720; line-height: 1; }
   .mobile-navigation .mobile-entry-count {
     --mdui-color-error: 231, 235, 218;
@@ -764,6 +780,16 @@ footer span { font-family: var(--font-geist-mono), monospace; }
   .mode-option-grid-inner { grid-template-columns: 1fr; }
   .mode-option-grid-inner > label { min-height: 68px; }
   .format-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) and (hover: hover) and (pointer: fine) {
+  .mobile-navigation mdui-navigation-bar-item:not([active]):hover::part(indicator) {
+    background-color: rgba(89, 94, 84, 0.1);
+  }
+  .mobile-navigation mdui-navigation-bar-item[active]:hover::part(indicator) {
+    background-color: rgb(218, 238, 170);
+    box-shadow: inset 0 0 0 1px rgba(79, 99, 31, 0.12);
+  }
 }
 
 /* iOS installed apps need a small guaranteed gesture-area buffer even when

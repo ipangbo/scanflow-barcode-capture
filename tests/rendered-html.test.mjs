@@ -88,6 +88,9 @@ test("mobile navigation separates scanning and entries without changing desktop 
   assert.match(stylesheet, /mdui-navigation-bar-item::part\(container\)\s*\{[^}]*flex-direction: row/s);
   assert.match(stylesheet, /mdui-navigation-bar-item::part\(indicator\)\s*\{[^}]*flex: 0 0 auto/s);
   assert.doesNotMatch(stylesheet, /mdui-navigation-bar-item::part\(indicator\)\s*\{[^}]*width: 32px/s);
+  assert.match(stylesheet, /mdui-navigation-bar-item\s*\{[^}]*--mdui-state-layer-hover: 0/s);
+  assert.match(stylesheet, /mdui-navigation-bar-item:not\(\[active\]\):hover::part\(indicator\)/);
+  assert.match(stylesheet, /mdui-navigation-bar-item\[active\]:hover::part\(indicator\)/);
   assert.match(stylesheet, /height: calc\(56px \+ max\(env\(safe-area-inset-bottom\), 8px\)\)/);
   assert.match(stylesheet, /padding-bottom: max\(env\(safe-area-inset-bottom\), 8px\)/);
   assert.match(stylesheet, /@media \(display-mode: standalone\) and \(max-width: 720px\)[\s\S]*height: calc\(56px \+ max\(env\(safe-area-inset-bottom\), 24px\)\)/);
@@ -353,13 +356,19 @@ test("scanner modes constrain formats and include examples", async () => {
 });
 
 test("settings dialog stays within the mobile visual viewport", async () => {
-  const stylesheet = await readSource("app/globals.css");
+  const [scannerSource, stylesheet] = await Promise.all([
+    readSource("app/components/scanner-panel.tsx"),
+    readSource("app/globals.css"),
+  ]);
 
+  assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*--z-index: 100/s);
   assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*max-height: 100%/s);
   assert.match(stylesheet, /\.settings-dialog\s*\{[^}]*overscroll-behavior: contain/s);
   assert.match(stylesheet, /\.settings-dialog::part\(panel\)\s*\{[^}]*100dvh/s);
   assert.match(stylesheet, /\.settings-dialog::part\(panel\)\s*\{[^}]*env\(safe-area-inset-top\)/s);
   assert.match(stylesheet, /\.settings-dialog::part\(body\)\s*\{[^}]*overflow-y: auto/s);
+  assert.match(scannerSource, /placeholder="Enter a barcode"/);
+  assert.doesNotMatch(scannerSource, /Enter a barcode and press Return/);
 });
 
 test("camera results require confirmation and University IDs are numeric", async () => {

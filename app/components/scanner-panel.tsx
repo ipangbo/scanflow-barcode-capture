@@ -301,7 +301,7 @@ export function ScannerPanel({
             variant="outlined"
             value={manualValue}
             onInput={(event) => onManualValueChange((event.currentTarget as HTMLElement & { value: string }).value)}
-            placeholder="Enter a barcode and press Return"
+            placeholder="Enter a barcode"
             autocomplete="off"
             spellcheck={false}
           />
