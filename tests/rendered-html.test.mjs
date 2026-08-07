@@ -77,11 +77,14 @@ test("mobile navigation separates scanning and entries without changing desktop 
   assert.match(navigationSource, /<mdui-navigation-bar/);
   assert.match(navigationSource, /value="scanner"/);
   assert.match(navigationSource, /value="entries"/);
+  assert.doesNotMatch(navigationSource, /scrollIntoView|requestAnimationFrame/);
   assert.match(componentLoader, /components\/navigation-bar\.js/);
   assert.match(scannerSource, /mobile-view-/);
   assert.match(recordsSource, /mobile-view-/);
   assert.match(stylesheet, /\.mobile-navigation \{ display: none !important; \}/);
   assert.match(stylesheet, /@media \(max-width: 720px\)[\s\S]*\.workspace > \.mobile-view-inactive \{ display: none; \}/);
+  assert.match(stylesheet, /mdui-navigation-bar-item::part\(container\)\s*\{[^}]*flex-direction: row/s);
+  assert.match(stylesheet, /height: calc\(56px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(stylesheet, /\.workspace \{[\s\S]*grid-template-columns: minmax\(0, 1\.04fr\) minmax\(420px, 0\.96fr\)/);
 });
 

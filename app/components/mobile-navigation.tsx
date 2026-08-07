@@ -26,12 +26,6 @@ export function MobileNavigation({
     const handleChange = () => {
       const nextView: MobileWorkspaceView = element.value === "entries" ? "entries" : "scanner";
       onViewChange(nextView);
-      window.requestAnimationFrame(() => {
-        document.getElementById("workspace")?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-          block: "start",
-        });
-      });
     };
 
     element.addEventListener("change", handleChange);
